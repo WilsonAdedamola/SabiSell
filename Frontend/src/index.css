@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  
+  --color-sabi-primary: #059669;
+  --color-sabi-primaryDark: #047857;
+  --color-sabi-surface: #F9FAFB;
+  --color-sabi-border: #E5E7EB;
+  --color-sabi-textPrimary: #111827;
+  --color-sabi-textSecondary: #6B7280;
+}
+
+/* Custom scrollbar hiding utility for the PWA feel */
+/* @layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+} */

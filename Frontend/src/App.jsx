@@ -1,0 +1,105 @@
+import React from 'react';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+
+// 1. LAYOUTS
+import AuthLayout from './layouts/AuthLayout';
+import VendorLayout from './layouts/VendorLayout';
+import StoreLayout from './layouts/StoreLayout';
+
+// 2. MARKETING PAGES
+import Landing from './pages/marketing/Landing';
+import Pricing from './pages/marketing/Pricing';
+import FAQ from './pages/marketing/FAQ';
+
+// 3. AUTH PAGES
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import VerifyEmail from './pages/auth/VerifyEmail';
+
+// 4. VENDOR PAGES (The Core App)
+import Onboarding from './pages/vendor/Onboarding';
+import Dashboard from './pages/vendor/Dashboard';
+import Products from './pages/vendor/Products';
+import AddEditProduct from './pages/vendor/AddEditProduct';
+import Orders from './pages/vendor/Orders';
+import OrderDetails from './pages/vendor/OrderDetails';
+import Inbox from './pages/vendor/Inbox';
+import ChatScreen from './pages/vendor/ChatScreen';
+import Settings from './pages/vendor/Settings';
+import Billing from './pages/vendor/Billing';
+
+// 5. CUSTOMER STOREFRONT PAGES (No Login Required)
+import StoreHome from './pages/store/StoreHome';
+import ProductDetails from './pages/store/ProductDetails';
+import Cart from './pages/store/Cart';
+import Checkout from './pages/store/Checkout';
+import OrderSuccess from './pages/store/OrderSuccess';
+
+// 6. SYSTEM PAGES
+import NotFound from './pages/errors/NotFound';
+
+// --- ROUTER CONFIGURATION ---
+const router = createBrowserRouter([
+  // SYSTEM 1: MARKETING WEBSITE
+  { path: "/", element: <Landing /> },
+  { path: "/pricing", element: <Pricing /> },
+  { path: "/faq", element: <FAQ /> },
+
+  // SYSTEM 2: AUTHENTICATION FLOW
+  {
+    path: "/auth",
+    element: <AuthLayout />,
+    children: [
+      { index: true, element: <Navigate to="/auth/login" replace /> },
+      { path: "login", element: <Login /> },
+      { path: "register", element: <Register /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "verify-email", element: <VerifyEmail /> },
+    ],
+  },
+
+  // SYSTEM 3: VENDOR APP (sabisell.com/dashboard)
+  {
+    path: "/dashboard",
+    element: <VendorLayout />,
+    children: [
+      { index: true, element: <Dashboard /> },
+      { path: "onboarding", element: <Onboarding /> },
+      { path: "products", element: <Products /> },
+      { path: "products/new", element: <AddEditProduct /> },
+      { path: "products/:id/edit", element: <AddEditProduct /> },
+      { path: "orders", element: <Orders /> },
+      { path: "orders/:id", element: <OrderDetails /> },
+      { path: "messages", element: <Inbox /> },
+      { path: "messages/:id", element: <ChatScreen /> },
+      { path: "settings", element: <Settings /> },
+      { path: "billing", element: <Billing /> },
+    ],
+  },
+
+  // SYSTEM 4: CUSTOMER STOREFRONT (sabisell.com/zara-stitches)
+  {
+    path: "/:storeSlug",
+    element: <StoreLayout />,
+    children: [
+      { index: true, element: <StoreHome /> },
+      { path: "product/:id", element: <ProductDetails /> },
+      { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <Checkout /> },
+      { path: "success", element: <OrderSuccess /> },
+    ],
+  },
+
+  // SYSTEM 5: CATCH-ALL 404
+  {
+    path: "*",
+    element: <NotFound />
+  }
+]);
+
+const App = () => {
+  return <RouterProvider router={router} />;
+};
+
+export default App;
