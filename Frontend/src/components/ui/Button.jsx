@@ -1,8 +1,9 @@
 import React from 'react';
+import { cn } from '../../utils/helpers'
 
-function cn(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
+// function cn(...classes) {
+//   return classes.filter(Boolean).join(' ');
+// }
 
 export default function Button({ 
   children, 
@@ -20,7 +21,7 @@ export default function Button({
   );
 
   const variants = {
-    // That vibrant green seen in your mockups
+    // vibrant green
     primary: "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500",
     
     // A lighter variation

@@ -1,7 +1,7 @@
-import React from 'react'
+import { cn } from '../../utils/helpers' // Importing our global utility
 
-const Inputs = ({ label, error, className, ...props }) => {
-   const inputId = props.id || label?.toLowerCase().replace(/\s+/g, '-');
+const Input = ({ label, error, className, ...props }) => {
+  const inputId = props.id || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
     <div className={cn("w-full space-y-2", className)}>
@@ -18,14 +18,12 @@ const Inputs = ({ label, error, className, ...props }) => {
         id={inputId}
         className={cn(
           "w-full px-4 py-3 bg-white",
-          "border border-gray-200 rounded-xl", // Radii seen in mockups
+          "border border-gray-200 rounded-xl",
           "text-base placeholder:text-gray-400",
           "transition-all duration-150 ease-in-out",
-          // Focus state (Emerald ring)
           "focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 focus:outline-none",
-          // Error state
           error && "border-red-500 focus:ring-red-100 focus:border-red-500",
-          className // Allows overriding if absolutely necessary
+          className
         )}
       />
       {error && (
@@ -33,6 +31,6 @@ const Inputs = ({ label, error, className, ...props }) => {
       )}
     </div>
   );
-}
+};
 
-export default Inputs
+export default Input;

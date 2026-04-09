@@ -1,8 +1,8 @@
-import React from 'react';
+import { cn } from '../../utils/helpers'
 
-function cn(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
+// function cn(...classes) {
+//   return classes.filter(Boolean).join(' ');
+// }
 
 export function Card({ children, className }) {
   return (
@@ -14,7 +14,7 @@ export function Card({ children, className }) {
     )}>
       {children}
     </div>
-  );
+  )
 }
 
 export function CardHeader({ children, className }) {
@@ -22,7 +22,7 @@ export function CardHeader({ children, className }) {
     <div className={cn("px-6 py-5 border-b border-gray-100", className)}>
       {children}
     </div>
-  );
+  )
 }
 
 export function CardContent({ children, className }) {
@@ -30,5 +30,5 @@ export function CardContent({ children, className }) {
     <div className={cn("p-6", className)}>
       {children}
     </div>
-  );
+  )
 }
