@@ -18,6 +18,7 @@ import heroImg from "../../assets/HeroImg.svg";
 
 const Landing = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isYearly, setIsYearly] = useState(false);
 
   const navLinks = [
     { name: "Features", path: "#features" },
@@ -166,16 +167,6 @@ const Landing = () => {
 
               {/* Hero Image Mockup (Stylized representation) */}
               <div className="relative w-full h-100 sm:h-125 lg:h-150 bg-transparent flex items-center justify-center">
-                {/* In production, replace this div with: <img src={heroDevicesMockup} alt="SabiSell on Laptop and Mobile" className="object-contain w-full h-full" /> */}
-                {/* <div className="w-full max-w-2xl bg-gray-100 rounded-2xl border border-gray-200 shadow-2xl p-8 flex flex-col items-center justify-center aspect-video relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                  <div className="z-10 text-center">
-                    <div className="text-6xl mb-4">💻📱</div>
-                    <p className="text-gray-500 font-medium">
-                      Insert Hero Devices Image Here
-                    </p>
-                  </div>
-                </div> */}
                 <img src={heroImg} alt="SabiSell Hero" />
               </div>
             </div>
@@ -350,11 +341,25 @@ const Landing = () => {
                   </h3>
 
                   {/* Monthly / Yearly Toggle */}
-                  <div className="bg-white border border-gray-200 rounded-full p-1 flex inline-flex items-center shadow-sm">
-                    <button className="bg-sabi-primary text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm">
+                  <div className="bg-white border border-gray-200 rounded-full p-1 flex items-center shadow-sm">
+                    <button
+                      onClick={() => setIsYearly(false)}
+                      className={`px-6 py-2 text-sm font-bold transition-colors ${
+                        !isYearly
+                          ? "bg-sabi-primary text-white rounded-full shadow-sm"
+                          : "text-gray-600 hover:text-gray-900 bg-transparent"
+                      }`}
+                    >
                       Monthly
                     </button>
-                    <button className="text-gray-600 px-6 py-2 rounded-full text-sm font-bold hover:text-gray-900">
+                    <button
+                      onClick={() => setIsYearly(true)}
+                      className={`px-6 py-2 text-sm font-bold transition-colors ${
+                        isYearly
+                          ? "bg-sabi-primary text-white rounded-full shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
                       Yearly
                     </button>
                     <span className="text-emerald-600 text-xs font-bold px-3">
@@ -373,14 +378,14 @@ const Landing = () => {
                       <p className="text-gray-500 text-sm mt-1">
                         Perfect to get started
                       </p>
-                      <div className="my-4">
+                      <div className="my-4 flex items-center justify-center gap-1">
                         <span className="text-4xl font-extrabold text-gray-900">
                           ₦0
-                        </span>{" "}
-                        <span className="text-gray-500">/month</span>
+                        </span>
+                        <span className="text-gray-500 mt-2">/month</span>
                       </div>
                     </div>
-                    <ul className="space-y-3 mb-8 flex-grow">
+                    <ul className="space-y-3 mb-8 grow">
                       {[
                         "Up to 10 products",
                         "Free SabiSell subdomain",
@@ -392,7 +397,7 @@ const Landing = () => {
                           key={i}
                           className="flex items-start gap-2 text-sm text-gray-700"
                         >
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                           <span>{ft}</span>
                         </li>
                       ))}
@@ -414,11 +419,20 @@ const Landing = () => {
                       <p className="text-gray-500 text-sm mt-1">
                         Everything you need to grow
                       </p>
-                      <div className="my-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
-                          ₦5,000
-                        </span>{" "}
-                        <span className="text-gray-500">/month</span>
+                      <div className="my-4 flex flex-col items-center justify-center">
+                        {isYearly && (
+                          <span className="text-lg text-gray-400 line-through decoration-red-400/50 mb-[-5px]">
+                            ₦60,000
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <span className="text-4xl font-extrabold text-gray-900">
+                            {isYearly ? "₦48,000" : "₦5,000"}
+                          </span>
+                          <span className="text-gray-500 mt-2">
+                            {isYearly ? "/year" : "/month"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <ul className="space-y-3 mb-8 flex-grow">
@@ -453,11 +467,20 @@ const Landing = () => {
                       <p className="text-gray-500 text-sm mt-1">
                         Powerful tools for scaling
                       </p>
-                      <div className="my-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
-                          ₦12,000
-                        </span>{" "}
-                        <span className="text-gray-500">/month</span>
+                      <div className="my-4 flex flex-col items-center justify-center">
+                        {isYearly && (
+                          <span className="text-lg text-gray-400 line-through decoration-red-400/50 mb-[-5px]">
+                            ₦144,000
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <span className="text-4xl font-extrabold text-gray-900">
+                            {isYearly ? "₦115,200" : "₦12,000"}
+                          </span>
+                          <span className="text-gray-500 mt-2">
+                            {isYearly ? "/year" : "/month"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <ul className="space-y-3 mb-8 flex-grow">
@@ -541,7 +564,7 @@ const Landing = () => {
                 href="#"
                 className="text-gray-400 hover:text-white transition-colors"
               >
-                Instagram
+                
               </a>
               <a
                 href="#"
