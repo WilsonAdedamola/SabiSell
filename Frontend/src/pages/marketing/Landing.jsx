@@ -9,106 +9,19 @@ import {
   MessageCircle,
   CreditCard,
   Rocket,
-  Menu,
-  X,
   Check,
 } from "lucide-react";
-import Logo from "../../components/shared/Logo";
 import heroImg from "../../assets/HeroImg.svg";
+import Header from "../../components/shared/Header";
+import Footer from "../../components/shared/Footer";
 
 const Landing = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
-
-  const navLinks = [
-    { name: "Features", path: "#features" },
-    { name: "How It Works", path: "#how-it-works" },
-    { name: "Pricing", path: "/pricing" },
-    { name: "Success Stories", path: "#success-stories" },
-    { name: "FAQ", path: "/faq" },
-  ];
 
   return (
     <div className="min-h-screen bg-sabi-surface flex flex-col font-sans">
       {/* --- HEADER --- */}
-      <header className="bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
-          <Link to="/" className="shrink-0 flex items-center gap-2">
-            <Logo className="w-8 h-8" showText={false} />
-            <span className="text-2xl font-bold text-gray-900 tracking-tight">
-              SabiSell
-            </span>
-          </Link>
-
-          <nav className="hidden lg:flex space-x-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.path}
-                className="text-gray-900 hover:text-sabi-primary font-semibold text-sm transition-colors"
-              >
-                {link.name}
-              </a>
-            ))}
-          </nav>
-
-          <div className="hidden lg:flex items-center space-x-4">
-            <Link
-              to="/auth/login"
-              className="px-6 py-2.5 border border-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/auth/register"
-              className="bg-sabi-primary hover:bg-sabi-primaryLight text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 text-sm shadow-sm"
-            >
-              Start Free Store <span>→</span>
-            </Link>
-          </div>
-
-          <button
-            className="lg:hidden p-2 text-gray-600"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t border-gray-100 px-4 pt-4 pb-6 space-y-4 shadow-xl absolute w-full z-40">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.path}
-                className="block text-gray-800 font-semibold text-base py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.name}
-              </a>
-            ))}
-            <div className="pt-4 flex flex-col gap-3">
-              <Link
-                to="/auth/login"
-                className="w-full text-center py-3 border border-gray-300 rounded-lg font-semibold text-gray-800"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/auth/register"
-                className="w-full text-center py-3 bg-sabi-primary text-white rounded-lg font-semibold"
-              >
-                Start Free Store →
-              </Link>
-            </div>
-          </div>
-        )}
-      </header>
+      <Header />
 
       {/* --- MAIN CONTENT --- */}
       <main className="grow flex flex-col bg-white">
@@ -165,7 +78,7 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Hero Image Mockup (Stylized representation) */}
+              {/* Hero Image Mockup */}
               <div className="relative w-full h-100 sm:h-125 lg:h-150 bg-transparent flex items-center justify-center">
                 <img src={heroImg} alt="SabiSell Hero" />
               </div>
@@ -344,7 +257,7 @@ const Landing = () => {
                   <div className="bg-white border border-gray-200 rounded-full p-1 flex items-center shadow-sm">
                     <button
                       onClick={() => setIsYearly(false)}
-                      className={`px-6 py-2 text-sm font-bold transition-colors ${
+                      className={`px-6 py-2 text-sm font-bold transition-colors cursor-pointer ${
                         !isYearly
                           ? "bg-sabi-primary text-white rounded-full shadow-sm"
                           : "text-gray-600 hover:text-gray-900 bg-transparent"
@@ -354,7 +267,7 @@ const Landing = () => {
                     </button>
                     <button
                       onClick={() => setIsYearly(true)}
-                      className={`px-6 py-2 text-sm font-bold transition-colors ${
+                      className={`px-6 py-2 text-sm font-bold transition-colors cursor-pointer ${
                         isYearly
                           ? "bg-sabi-primary text-white rounded-full shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
@@ -435,7 +348,7 @@ const Landing = () => {
                         </div>
                       </div>
                     </div>
-                    <ul className="space-y-3 mb-8 flex-grow">
+                    <ul className="space-y-3 mb-8 grow">
                       {[
                         "Up to 100 products",
                         "Custom domain (yourstore.com)",
@@ -448,7 +361,7 @@ const Landing = () => {
                           key={i}
                           className="flex items-start gap-2 text-sm text-gray-700 font-medium"
                         >
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                           <span>{ft}</span>
                         </li>
                       ))}
@@ -469,7 +382,7 @@ const Landing = () => {
                       </p>
                       <div className="my-4 flex flex-col items-center justify-center">
                         {isYearly && (
-                          <span className="text-lg text-gray-400 line-through decoration-red-400/50 mb-[-5px]">
+                          <span className="text-lg text-gray-400 line-through decoration-red-400/50 -mb-1.25">
                             ₦144,000
                           </span>
                         )}
@@ -483,7 +396,7 @@ const Landing = () => {
                         </div>
                       </div>
                     </div>
-                    <ul className="space-y-3 mb-8 flex-grow">
+                    <ul className="space-y-3 mb-8 grow">
                       {[
                         "Unlimited products",
                         "Staff accounts (up to 5)",
@@ -496,7 +409,7 @@ const Landing = () => {
                           key={i}
                           className="flex items-start gap-2 text-sm text-gray-700"
                         >
-                          <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                          <Check className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                           <span>{ft}</span>
                         </li>
                       ))}
@@ -516,7 +429,7 @@ const Landing = () => {
           <div className="bg-[#044e3b] px-4 py-16 lg:py-20">
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
               <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shrink-0 shadow-lg">
                   <Rocket className="w-8 h-8 text-sabi-primary" />
                 </div>
                 <div>
@@ -528,7 +441,7 @@ const Landing = () => {
                   </p>
                 </div>
               </div>
-              <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-xl shadow-lg max-w-md w-full">
+              <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-xl shadow-lg max-w-md">
                 <input
                   type="email"
                   placeholder="Enter your email address"
@@ -546,65 +459,8 @@ const Landing = () => {
         </section>
       </main>
 
-      {/* --- INLINE FOOTER --- */}
-      <footer className="bg-[#0f172a] py-8 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-white">
-            <Logo className="w-6 h-6" showText={false} />
-            <span className="text-xl font-bold tracking-tight">SabiSell</span>
-          </div>
-
-          <div className="text-sm text-gray-400 font-medium">
-            © 2026 SabiSell. All rights reserved.
-          </div>
-
-          <div className="flex items-center gap-8">
-            <div className="flex space-x-5">
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Facebook
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Twitter
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Youtube
-              </a>
-            </div>
-            <div className="hidden sm:flex items-center gap-6 text-sm text-gray-400 font-medium">
-              <Link to="/terms" className="hover:text-white transition-colors">
-                Terms
-              </Link>
-              <Link
-                to="/privacy"
-                className="hover:text-white transition-colors"
-              >
-                Privacy
-              </Link>
-              <Link
-                to="/contact"
-                className="hover:text-white transition-colors"
-              >
-                Contact
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* --- FOOTER --- */}
+      <Footer />  
     </div>
   );
 };
