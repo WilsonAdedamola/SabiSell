@@ -146,7 +146,7 @@ const FAQ = () => {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full overflow-hidden">
           {/* Hid the scrollbar with inline styles, and add flex-nowrap + overflow-x-auto */}
           <div 
-            className="flex flex-nowrap overflow-x-auto gap-4 pb-4 w-full snap-x touch-pan-x" 
+            className="flex flex-nowrap overflow-x-auto gap-4 pb-4 w-full snap-x touch-pan-x xl:justify-center" 
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <style>{`
