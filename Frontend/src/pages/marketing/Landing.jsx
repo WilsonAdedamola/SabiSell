@@ -66,7 +66,7 @@ const Landing = () => {
 
                 <div className="flex flex-col sm:flex-row justify-center xl:justify-start gap-4 pt-2">
                   <Link
-                    to="/auth/register"
+                    to="/register"
                     className="bg-sabi-primary hover:bg-sabi-primaryDark text-white px-8 py-3.5 rounded-lg font-bold text-base transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                   >
                     Start Your Free Store <span>→</span>
@@ -223,7 +223,7 @@ const Landing = () => {
                     },
                   ].map((step, idx) => (
                     <div key={idx} className="flex gap-6 relative z-10">
-                      <div className="w-12 h-12 rounded-full bg-sabi-primary text-white font-bold text-xl flex items-center justify-center flex-shrink-0 shadow-sm border-4 border-white">
+                      <div className="w-12 h-12 rounded-full bg-sabi-primary text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-sm border-4 border-white">
                         {step.num}
                       </div>
                       <div className="pt-2">
@@ -236,7 +236,7 @@ const Landing = () => {
                   ))}
                 </div>
                 <Link
-                  to="/#how-it-works"
+                  to="/how-it-works"
                   className="inline-block mt-10 text-sabi-primary font-bold hover:text-sabi-primaryDark transition-colors"
                 >
                   Learn more about how it works →
@@ -448,7 +448,7 @@ const Landing = () => {
                   className="w-full px-4 py-3 bg-transparent text-gray-900 focus:outline-none placeholder:text-gray-400 font-medium"
                 />
                 <Link
-                  to="/auth/register"
+                  to="/register"
                   className="bg-sabi-primary hover:bg-sabi-primaryDark text-white px-6 py-3 rounded-lg font-bold transition-colors whitespace-nowrap flex items-center justify-center gap-2"
                 >
                   Start Free Store <span>→</span>

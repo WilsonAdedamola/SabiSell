@@ -142,7 +142,6 @@ const FAQ = () => {
         </section>
 
         {/* 2. CATEGORY TABS */}
-        {/* Used w-full overflow-hidden on the parent to prevent the page from shifting */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full overflow-hidden">
           {/* Hid the scrollbar with inline styles, and add flex-nowrap + overflow-x-auto */}
           <div 

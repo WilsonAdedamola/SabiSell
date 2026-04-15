@@ -2,7 +2,6 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 // 1. LAYOUTS
-import AuthLayout from './layouts/AuthLayout';
 import VendorLayout from './layouts/VendorLayout';
 import StoreLayout from './layouts/StoreLayout';
 
@@ -47,17 +46,10 @@ const router = createBrowserRouter([
   { path: "/faq", element: <FAQ /> },
 
   // SYSTEM 2: AUTHENTICATION FLOW
-  {
-    path: "/auth",
-    element: <AuthLayout />,
-    children: [
-      { index: true, element: <Navigate to="/auth/login" replace /> },
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Register /> },
-      { path: "forgot-password", element: <ForgotPassword /> },
-      { path: "verify-email", element: <VerifyEmail /> },
-    ],
-  },
+      { path: "/login", element: <Login /> },
+      { path: "/register", element: <Register /> },
+      { path: "/forgot-password", element: <ForgotPassword /> },
+      { path: "/verify-email", element: <VerifyEmail /> },
 
   // SYSTEM 3: VENDOR APP (sabisell.com/dashboard)
   {
