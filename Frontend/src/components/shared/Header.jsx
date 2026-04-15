@@ -9,10 +9,10 @@ const Header = () => {
 
   // Notice the paths include '/' so hash links work from any page
   const navLinks = [
-    { name: "Features", path: "/#features" },
-    { name: "How It Works", path: "/#how-it-works" },
+    { name: "Features", path: "/features" },
+    { name: "How It Works", path: "/how-it-works" },
     { name: "Pricing", path: "/pricing" },
-    { name: "Success Stories", path: "/#success-stories" },
+    { name: "Success Stories", path: "/success-stories" },
     { name: "FAQ", path: "/faq" },
   ];
 
@@ -47,13 +47,13 @@ const Header = () => {
 
         <div className="hidden lg:flex items-center space-x-4">
           <Link
-            to="/auth/login"
+            to="/login"
             className="px-6 py-2.5 border border-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
           >
             Log in
           </Link>
           <Link
-            to="/auth/register"
+            to="/register"
             className="bg-sabi-primary hover:bg-sabi-primaryDark text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 text-sm shadow-sm"
           >
             Start Free Store <span>→</span>
@@ -92,13 +92,13 @@ const Header = () => {
           })}
           <div className="pt-4 flex flex-col gap-3">
             <Link
-              to="/auth/login"
+              to="/login"
               className="w-full text-center py-3 border border-gray-300 rounded-lg font-semibold text-gray-800"
             >
               Log in
             </Link>
             <Link
-              to="/auth/register"
+              to="/register"
               className="w-full text-center py-3 bg-sabi-primary text-white rounded-lg font-semibold"
             >
               Start Free Store →
