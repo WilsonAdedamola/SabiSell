@@ -1,24 +1,53 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Eye, EyeOff, ChevronRight, ChevronLeft, 
   Lock, Mail, ArrowRight, ShieldCheck, 
   Zap, ShoppingCart, MessageSquare, 
-  Headphones, Clock, MessageCircle 
+  Headphones, Clock, MessageCircle, AlertCircle 
 } from "lucide-react";
 import Logo from "../../components/shared/Logo";
 import loginImg from "../../assets/Login-image.jpg"
+import api from '../../utils/api';
 
 const Login = () => {
+
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear any previous errors when the user starts typing again
+    if (error) setError('');
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 1. Send login credentials
+      const response = await api.post('/auth/login', formData);
+
+      // 2. Save the token
+      localStorage.setItem('sabisell_token', response.data.token);
+      localStorage.setItem('sabisell_vendor', JSON.stringify(response.data.vendor));
+      
+        navigate('/dashboard');
+
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -95,7 +124,15 @@ const Login = () => {
                 <p className="text-gray-500 text-base">Access your dashboard and continue selling</p>
              </div>
 
-             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+             {/* Error Message Display */}
+             {error && (
+               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                 <p className="text-sm font-medium text-red-800">{error}</p>
+               </div>
+             )}
+
+             <form className="space-y-6" onSubmit={handleLogin}>
                
                {/* Email Field */}
                <div>
@@ -106,6 +143,7 @@ const Login = () => {
                    </div>
                    <input 
                      type="email" 
+                     required
                      name="email" 
                      value={formData.email} 
                      onChange={handleChange} 
@@ -124,6 +162,7 @@ const Login = () => {
                    </div>
                    <input 
                      type={showPassword ? "text" : "password"} 
+                     required
                      name="password" 
                      value={formData.password} 
                      onChange={handleChange} 
@@ -148,9 +187,19 @@ const Login = () => {
                </div>
 
                {/* Submit Button */}
-               <Link to="/dashboard" className="w-full flex mt-2 bg-sabi-primary hover:bg-sabi-primaryDark text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 items-center justify-center gap-2 text-base">
-                  <ArrowRight className="w-5 h-5" /> Log In to Dashboard
-               </Link>
+               <button 
+                 type="submit" 
+                 disabled={isLoading}
+                 className="w-full flex mt-2 bg-sabi-primary hover:bg-sabi-primaryDark text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 items-center justify-center gap-2 text-base disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                  {isLoading ? (
+                    "Logging in..."
+                  ) : (
+                    <>
+                      <ArrowRight className="w-5 h-5" /> Log In to Dashboard
+                    </>
+                  )}
+               </button>
 
                {/* Divider */}
                <div className="relative flex items-center py-2">

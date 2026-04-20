@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { 
   Store, Upload, Camera, CheckCircle2, 
   ArrowLeft, Lightbulb, Tag, Image as ImageIcon,
-  LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, ArrowRight, Rocket
+  LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, ArrowRight, Rocket, Loader2, AlertCircle
 } from "lucide-react";
+import api from '../../utils/api';
 
 const VendorOnboarding = () => {
   const navigate = useNavigate();
@@ -14,6 +15,28 @@ const VendorOnboarding = () => {
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [selectedStoreType, setSelectedStoreType] = useState(null);
   const dropdownRef = useRef(null);
+
+  // --- FORM DATA STATE ---
+  // Step 1: Store Details
+  const [storeData, setStoreData] = useState({ storeName: "", storeDescription: "" });
+  
+  // Step 2: Logo
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+
+  // Step 3: First Product (Pre-filled with placeholders to encourage submission)
+  const [productData, setProductData] = useState({ 
+    name: "Ankara Print Shirt", 
+    price: "15000", 
+    category: "Fashion & Clothing",
+    description: "A beautiful, premium quality Ankara print shirt perfect for casual outings and special events."
+  });
+  const [productPhoto, setProductPhoto] = useState(null);
+  const [productPreview, setProductPreview] = useState(null);
+
+  // Submission State
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const storeTypes = [
     { id: "fashion", name: "Fashion & Clothing", icon: "👗" },
@@ -35,9 +58,87 @@ const VendorOnboarding = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const nextStep = () => { if (step < 3) setStep(step + 1); };
+  // --- INPUT HANDLERS ---
+  const handleStoreChange = (e) => setStoreData({ ...storeData, [e.target.name]: e.target.value });
+  const handleProductChange = (e) => setProductData({ ...productData, [e.target.name]: e.target.value });
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file)); // Creates an instant preview URL
+    }
+  };
+
+  const handleProductPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProductPhoto(file);
+      setProductPreview(URL.createObjectURL(file));
+    }
+  };
+
+  // --- NAVIGATION VALIDATION ---
+  const nextStep = () => {
+    setError('');
+    // Ensure they filled out Step 1 before moving on
+    if (step === 1) {
+      if (!storeData.storeName) return setError("Please enter a Store Name.");
+      if (!selectedStoreType) return setError("Please select a Store Type.");
+    }
+    if (step < 3) setStep(step + 1); 
+  };
+  
   const prevStep = () => { if (step > 1) setStep(step - 1); };
-  const handleLaunch = () => { navigate("/dashboard"); };
+
+  // --- FINAL SUBMISSION ---
+  const handleLaunch = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 1. Submit Store Data
+      const storeFormData = new FormData();
+      storeFormData.append('storeName', storeData.storeName);
+      storeFormData.append('storeType', selectedStoreType.name);
+      storeFormData.append('storeDescription', storeData.storeDescription);
+      if (logoFile) storeFormData.append('logo', logoFile);
+
+      const storeRes = await api.put('/vendors/onboarding', storeFormData);
+
+      // 2. Submit Product Data (Only if they kept a name)
+      if (productData.name) {
+        const prodFormData = new FormData();
+        prodFormData.append('name', productData.name);
+        prodFormData.append('description', productData.description);
+        prodFormData.append('price', productData.price.replace(/,/g, '')); // Remove commas for the backend
+        prodFormData.append('category', productData.category);
+        prodFormData.append('stockQuantity', 10); 
+        prodFormData.append('status', "ACTIVE");
+        if (productPhoto) prodFormData.append('images', productPhoto);
+
+        await api.post('/products', prodFormData);
+      }
+
+      // 3. Update localStorage so the Dashboard knows they are Online
+      const currentVendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
+      const updatedVendor = {
+        ...currentVendorData,
+        storeName: storeRes.data.store.storeName,
+        storeLink: storeRes.data.store.storeLink,
+        logoUrl: storeRes.data.store.logoUrl,
+        isOnline: true // The magic key!
+      };
+      localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
+
+      // 4. Blast off to the dashboard!
+      navigate("/dashboard");
+
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to complete setup. Please try again.');
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full">
@@ -53,6 +154,14 @@ const VendorOnboarding = () => {
               🚀 3 Quick Steps to Launch
            </div>
         </div>
+
+        {/* Global Error Display */}
+        {error && (
+          <div className="w-full p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 animate-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm font-medium text-red-800">{error}</p>
+          </div>
+        )}
 
         {/* MAIN ONBOARDING CARD */}
         <div className="w-full bg-white rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200 flex flex-col relative overflow-hidden">
@@ -82,8 +191,7 @@ const VendorOnboarding = () => {
                      <p className="text-sm sm:text-base font-medium text-gray-500">These are the details customers will see when they visit your store.</p>
                   </div>
 
-                  {/* Grid layout to spread out on desktop */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pb-32">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pb-10 lg:pb-32">
                      
                      {/* Store Name Input */}
                      <div className="lg:col-span-1">
@@ -94,13 +202,13 @@ const VendorOnboarding = () => {
                            </div>
                            <input 
                              type="text" 
+                             name="storeName"
+                             value={storeData.storeName}
+                             onChange={handleStoreChange}
                              placeholder="e.g. Zara Stitches & Fashion" 
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
                            />
                         </div>
-                        <p className="text-[10px] sm:text-xs font-bold text-yellow-600 mt-2 flex items-center gap-1.5">
-                           <Lightbulb className="w-3.5 h-3.5" /> Choose a name that represents your business
-                        </p>
                      </div>
 
                      {/* Custom Store Type Dropdown */}
@@ -149,7 +257,7 @@ const VendorOnboarding = () => {
                         )}
                      </div>
 
-                     {/* About the Store Input (Spans full width on desktop) */}
+                     {/* About the Store Input */}
                      <div className="lg:col-span-2">
                         <label className="block text-sm font-bold text-gray-900 mb-2">About the Store</label>
                         <div className="relative">
@@ -158,23 +266,14 @@ const VendorOnboarding = () => {
                            </div>
                            <textarea 
                              rows="4"
+                             name="storeDescription"
+                             value={storeData.storeDescription}
+                             onChange={handleStoreChange}
                              placeholder="Briefly describe what you sell, your brand story, or what makes your store unique..."
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-700 text-sm sm:text-base resize-none leading-relaxed"
                            ></textarea>
                         </div>
                      </div>
-
-                     {/* Info Card (Spans full width) */}
-                     <div className="lg:col-span-2 bg-[#F8FAFC] rounded-2xl p-4 sm:p-5 flex gap-3 lg:items-center">
-                        <div className="text-2xl shrink-0 mt-0.5 lg:mt-0">💡</div>
-                        <div>
-                           <h4 className="text-sm font-bold text-gray-900">Don't worry!</h4>
-                           <p className="text-xs sm:text-sm font-medium text-gray-500 mt-1">
-                              You can change these details anytime later from your store settings.
-                           </p>
-                        </div>
-                     </div>
-
                   </div>
                </div>
              )}
@@ -193,34 +292,28 @@ const VendorOnboarding = () => {
                      <div className="lg:col-span-7">
                         <label className="block text-sm font-bold text-gray-900 mb-3">Store Logo</label>
                         
-                        <div className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-3xl p-8 sm:p-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-center sm:text-left relative overflow-hidden group cursor-pointer transition-colors hover:bg-emerald-50">
+                        <label className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-3xl p-8 sm:p-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-center sm:text-left relative overflow-hidden group cursor-pointer transition-colors hover:bg-emerald-50">
+                           <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
                            
-                           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-[#044e3b] flex flex-col items-center justify-center text-white shadow-xl shrink-0 relative z-10 border-4 border-white">
-                              <span className="font-bold text-3xl italic leading-none">Zara</span>
-                              <span className="text-[8px] tracking-widest uppercase opacity-80 mt-1.5">Stitches & Fashion</span>
-                           </div>
+                           {logoPreview ? (
+                              <img src={logoPreview} alt="Logo Preview" className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover shadow-xl shrink-0 relative z-10 border-4 border-white" />
+                           ) : (
+                              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-[#044e3b] flex flex-col items-center justify-center text-white shadow-xl shrink-0 relative z-10 border-4 border-white">
+                                 <span className="font-bold text-3xl italic leading-none">{storeData.storeName ? storeData.storeName.substring(0, 2).toUpperCase() : "ZA"}</span>
+                              </div>
+                           )}
                            
                            <div className="flex flex-col items-center sm:items-start relative z-10">
                               <div className="flex items-center justify-center gap-2 bg-white px-5 py-3 rounded-full border border-emerald-100 shadow-sm mb-3">
                                  <Upload className="w-5 h-5 text-[#044e3b]" />
-                                 <span className="text-sm font-bold text-gray-900">Tap to upload logo</span>
+                                 <span className="text-sm font-bold text-gray-900">{logoFile ? "Change Logo" : "Tap to upload logo"}</span>
                               </div>
                               <p className="text-[11px] font-medium text-gray-500">PNG, JPG up to 2MB</p>
                            </div>
-                        </div>
-
-                        <div className="relative flex items-center py-6">
-                           <div className="grow border-t border-gray-100"></div>
-                           <span className="shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase tracking-widest">or</span>
-                           <div className="grow border-t border-gray-100"></div>
-                        </div>
-
-                        <button className="w-full py-4 bg-white border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base shadow-sm">
-                           <Camera className="w-5 h-5 text-gray-500" /> Use Camera
-                        </button>
+                        </label>
                      </div>
 
-                     {/* Tips Card (Side panel on desktop) */}
+                     {/* Tips Card */}
                      <div className="lg:col-span-5 bg-[#F8FAFC] rounded-3xl p-6 sm:p-8 lg:h-full flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-4">
                            <Lightbulb className="w-5 h-5 text-yellow-500" />
@@ -234,10 +327,6 @@ const VendorOnboarding = () => {
                            <li className="flex items-start gap-3 text-sm font-bold text-gray-600">
                               <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" /> 
                               <span>Square or circular sizes work best across the platform.</span>
-                           </li>
-                           <li className="flex items-start gap-3 text-sm font-bold text-gray-600">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" /> 
-                              <span>Keep text minimal and easily readable on small screens.</span>
                            </li>
                         </ul>
                      </div>
@@ -256,21 +345,28 @@ const VendorOnboarding = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                      
-                     {/* Product Photo (Full width on mobile, spans 2 columns on desktop) */}
+                     {/* Product Photo */}
                      <div className="lg:col-span-2">
                         <label className="block text-sm font-bold text-gray-900 mb-3">Product Photo</label>
                         <div className="flex flex-wrap gap-4">
                            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-5xl shrink-0 overflow-hidden shadow-sm">
                               👕
                            </div>
-                           <button className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-2 transition-colors shrink-0">
-                              <ImageIcon className="w-8 h-8 text-emerald-700" />
-                              <span className="text-xs font-bold text-emerald-800">Add Photo</span>
-                           </button>
+                           <label className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-2 transition-colors shrink-0 cursor-pointer overflow-hidden relative">
+                              <input type="file" accept="image/*" className="hidden" onChange={handleProductPhotoChange} />
+                              {productPreview ? (
+                                <img src={productPreview} alt="Product Preview" className="w-full h-full object-cover" />
+                              ) : (
+                                <>
+                                  <ImageIcon className="w-8 h-8 text-emerald-700" />
+                                  <span className="text-xs font-bold text-emerald-800">Add Photo</span>
+                                </>
+                              )}
+                           </label>
                         </div>
                      </div>
 
-                     {/* Product Name (Spans 2 columns) */}
+                     {/* Product Name */}
                      <div className="lg:col-span-2">
                         <label className="block text-sm font-bold text-gray-900 mb-2">Product Name</label>
                         <div className="relative">
@@ -279,7 +375,9 @@ const VendorOnboarding = () => {
                            </div>
                            <input 
                              type="text" 
-                             defaultValue="Ankara Print Shirt"
+                             name="name"
+                             value={productData.name}
+                             onChange={handleProductChange}
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
                            />
                         </div>
@@ -294,7 +392,9 @@ const VendorOnboarding = () => {
                            </div>
                            <input 
                              type="text" 
-                             defaultValue="15,000"
+                             name="price"
+                             value={productData.price}
+                             onChange={handleProductChange}
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
                            />
                         </div>
@@ -309,9 +409,16 @@ const VendorOnboarding = () => {
                                  <span className="text-xs">🏷️</span>
                               </div>
                            </div>
-                           <select className="w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 appearance-none text-sm sm:text-base">
+                           <select 
+                             name="category"
+                             value={productData.category}
+                             onChange={handleProductChange}
+                             className="w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 appearance-none text-sm sm:text-base"
+                           >
                               <option>Fashion & Clothing</option>
                               <option>Electronics</option>
+                              <option>Health & Beauty</option>
+                              <option>Home & Office</option>
                            </select>
                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                               <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -319,17 +426,22 @@ const VendorOnboarding = () => {
                         </div>
                      </div>
 
-                     {/* Ready Tip */}
-                     <div className="lg:col-span-2 bg-[#F0FDF4] border border-emerald-100 rounded-2xl p-5 flex gap-3 items-center mt-2">
-                        <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
-                        <div>
-                           <h4 className="text-sm font-bold text-gray-900">You're almost ready!</h4>
-                           <p className="text-xs sm:text-sm font-medium text-emerald-800 mt-0.5">
-                              You can add more products and variants later directly from your dashboard.
-                           </p>
+                     {/* Product Description */}
+                     <div className="lg:col-span-2">
+                        <label className="block text-sm font-bold text-gray-900 mb-2">Product Description</label>
+                        <div className="relative">
+                           <div className="absolute top-4 left-4 flex items-center pointer-events-none">
+                              <AlignLeft className="w-5 h-5 text-gray-400" />
+                           </div>
+                           <textarea 
+                             rows="3"
+                             name="description"
+                             value={productData.description}
+                             onChange={handleProductChange}
+                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-700 text-sm sm:text-base resize-none leading-relaxed"
+                           ></textarea>
                         </div>
                      </div>
-
                   </div>
                </div>
              )}
@@ -340,7 +452,7 @@ const VendorOnboarding = () => {
           <div className="p-5 sm:p-8 border-t border-gray-100 bg-gray-50/50 shrink-0 z-20">
              {step === 1 && (
                <div className="flex justify-end">
-                  <button onClick={nextStep} className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base">
+                  <button onClick={nextStep} className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer">
                      Continue to Logo Upload <ArrowRight className="w-5 h-5" />
                   </button>
                </div>
@@ -348,10 +460,10 @@ const VendorOnboarding = () => {
 
              {step === 2 && (
                <div className="flex flex-col-reverse sm:flex-row justify-between gap-3">
-                 <button onClick={prevStep} className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center text-sm sm:text-base">
+                 <button onClick={prevStep} className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center text-sm sm:text-base cursor-pointer">
                     <ArrowLeft className="w-5 h-5 sm:mr-2" /> <span className="ml-2 sm:ml-0">Back</span>
                  </button>
-                 <button onClick={nextStep} className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base">
+                 <button onClick={nextStep} className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer">
                     Continue to First Product <ArrowRight className="w-5 h-5" />
                  </button>
                </div>
@@ -359,21 +471,24 @@ const VendorOnboarding = () => {
 
              {step === 3 && (
                <div className="flex flex-col-reverse sm:flex-row justify-between gap-3">
-                 <button onClick={prevStep} className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center text-sm sm:text-base">
+                 <button onClick={prevStep} disabled={isLoading} className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center text-sm sm:text-base disabled:opacity-50 cursor-pointer">
                     <ArrowLeft className="w-5 h-5 sm:mr-2" /> <span className="ml-2 sm:ml-0">Back</span>
                  </button>
-                 <button onClick={handleLaunch} className="w-full sm:w-auto px-10 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 flex items-center justify-center gap-3 text-sm sm:text-base">
-                    <Rocket className="w-6 h-6" /> Launch My Store Dashboard
+                 <button onClick={handleLaunch} disabled={isLoading} className="w-full sm:w-auto px-10 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 text-sm sm:text-base disabled:opacity-70 cursor-pointer">
+                    {isLoading ? (
+                      <>Processing <Loader2 className="w-5 h-5 animate-spin" /></>
+                    ) : (
+                      <>Launch My Store <Rocket className="w-6 h-6" /></>
+                    )}
                  </button>
                </div>
              )}
           </div>
         </div>
 
-        {/* "What happens next?" Footer Banner */}
+        {/* Footer Banner */}
         <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 shrink-0">
            <div className="bg-[#E6F4EA] rounded-4xl p-6 lg:p-8 border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-              
               <div className="flex items-center gap-4 md:w-1/3 w-full">
                  <div className="w-14 h-14 rounded-2xl bg-sabi-primary text-white flex items-center justify-center shrink-0 shadow-inner">
                     <Store className="w-7 h-7" />
@@ -385,35 +500,6 @@ const VendorOnboarding = () => {
                     </p>
                  </div>
               </div>
-
-              <div className="flex items-center justify-between md:justify-end gap-3 lg:gap-6 text-emerald-800 flex-1 w-full overflow-x-auto hide-scrollbar pb-2 md:pb-0">
-                 <div className="flex items-center gap-2 shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-sabi-primary" />
-                    <div className="text-left">
-                       <p className="font-bold text-xs sm:text-sm text-gray-900">Store Created</p>
-                       <p className="text-[10px] sm:text-xs font-medium opacity-80">Your store is ready</p>
-                    </div>
-                 </div>
-                 <ArrowRight className="w-5 h-5 text-emerald-300 shrink-0 hidden sm:block" />
-                 
-                 <div className="flex items-center gap-2 opacity-60 shrink-0">
-                    <LayoutDashboard className="w-6 h-6 text-sabi-primary" />
-                    <div className="text-left">
-                       <p className="font-bold text-xs sm:text-sm text-gray-900">Go to Dashboard</p>
-                       <p className="text-[10px] sm:text-xs font-medium opacity-80">Manage everything</p>
-                    </div>
-                 </div>
-                 <ArrowRight className="w-5 h-5 text-emerald-300 shrink-0 hidden sm:block" />
-                 
-                 <div className="flex items-center gap-2 opacity-60 shrink-0 pr-4 md:pr-0">
-                    <ShoppingCart className="w-6 h-6 text-sabi-primary" />
-                    <div className="text-left">
-                       <p className="font-bold text-xs sm:text-sm text-gray-900">Start Selling</p>
-                       <p className="text-[10px] sm:text-xs font-medium opacity-80">Get orders</p>
-                    </div>
-                 </div>
-              </div>
-
            </div>
         </div>
 

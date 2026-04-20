@@ -33,9 +33,9 @@ const StoreLayout = () => {
       </nav>
 
       {/* This is where StoreHome, ProductDetails, and Cart will render */}
-      <main className="grow max-w-5xl mx-auto w-full p-4">
+      {/* <main className="grow max-w-5xl mx-auto w-full p-4">
         <Outlet />
-      </main>
+      </main> */}
     </div>
   )
 }
