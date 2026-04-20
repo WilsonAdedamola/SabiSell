@@ -1,13 +1,116 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Backend/prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+
+// VENDOR & STORE
+
+model Vendor {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  fullName         String
+  phone            String?
+  
+  // Store Details
+  storeName        String?
+  storeLink        String?   @unique
+  storeType        String?
+  storeDescription String?
+  logoUrl          String?
+  isOnline         Boolean   @default(false)
+
+  // Pricing Plan (Free, Starter, Growth)
+  plan             String    @default("FREE")
+  
+  // Relationships
+  products         Product[]
+  orders           Order[]
+  customers        Customer[]
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+
+// PRODUCTS
+
+model Product {
+  id               String    @id @default(uuid())
+  vendorId         String    
+  name             String
+  description      String?
+  price            Decimal   @db.Decimal(10, 2)
+  compareAtPrice   Decimal?  @db.Decimal(10, 2) 
+  stockQuantity    Int       @default(0)
+  category         String
+  status           String    @default("ACTIVE") 
+  imageUrls        String[]  
+  
+  vendor           Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  orderItems       OrderItem[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+
+// CUSTOMERS 
+
+model Customer {
+  id               String    @id @default(uuid())
+  vendorId         String    
+  fullName         String
+  email            String?
+  phone            String
+  address          String?
+  
+  vendor           Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  orders           Order[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+
+// ORDERS & ORDER ITEMS
+
+model Order {
+  id               String    @id @default(uuid()) 
+  orderNumber      String    @unique              
+  vendorId         String
+  customerId       String
+  
+  totalAmount      Decimal   @db.Decimal(10, 2)
+  deliveryFee      Decimal   @default(0.00) @db.Decimal(10, 2)
+  
+  status           String    @default("PENDING")  
+  paymentMethod    String?   
+  paymentStatus    String    @default("UNPAID")   
+  customerNote     String?
+  
+  vendor           Vendor    @relation(fields: [vendorId], references: [id])
+  customer         Customer  @relation(fields: [customerId], references: [id])
+  items            OrderItem[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model OrderItem {
+  id               String    @id @default(uuid())
+  orderId          String
+  productId        String
+  
+  quantity         Int
+  priceAtPurchase  Decimal   @db.Decimal(10, 2) 
+  
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product   @relation(fields: [productId], references: [id])
 }

@@ -2,21 +2,34 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
 // Middlewares
-app.use(cors())
-app.use(express.json());
+app.use(cors()); 
+app.use(express.json()); 
+
+// Import Routes
+const authRoutes = require('./routes/auth.routes');
+const vendorRoutes = require('./routes/vendor.routes');
+const productRoutes = require('./routes/product.routes');
+const subscriptionRoutes = require('./routes/subscription.routes');
+const orderRoutes = require('./routes/order.routes');
+const storefrontRoutes = require('./routes/storefront.routes');
+
+// Use Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/storefront', storefrontRoutes);
 
 // A simple test route
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'success', 
-    message: 'SabiSell Backend is running perfectly! 🚀' 
-  });
+  res.status(200).json({ status: 'success', message: 'SabiSell Backend is running!' });
 });
 
 const PORT = process.env.PORT || 5000;

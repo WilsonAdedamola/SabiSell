@@ -1,46 +1,77 @@
-import React from "react";
-
-//
 // 1. DASHBOARD SKELETON
-//
-export const DashboardSkeleton = () => (
-  <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full animate-pulse">
-    <div className="max-w-7xl mx-auto space-y-6 w-full">
-      {/* Welcome Banner */}
-      <div className="h-40 sm:h-48 w-full bg-gray-200 rounded-4xl"></div>
 
-      {/* Date Filter */}
-      <div className="flex justify-end">
-        <div className="w-32 h-10 bg-gray-200 rounded-lg"></div>
-      </div>
+export const DashboardSkeleton = () => {
+  return (
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full animate-pulse">
+      <div className="max-w-7xl mx-auto w-full space-y-6 mt-4 sm:mt-0">
+        
+        {/* 1. WELCOME BANNER SKELETON */}
+        <div className="bg-gray-200 rounded-4xl p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 h-auto md:h-40 border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
+            {/* Logo Circle */}
+            <div className="w-20 h-20 bg-gray-300 rounded-full shrink-0 border-4 border-gray-100"></div>
+            {/* Text Lines */}
+            <div className="space-y-3 w-full max-w-sm flex flex-col items-center sm:items-start">
+              <div className="h-8 bg-gray-300 rounded-xl w-3/4"></div>
+              <div className="h-4 bg-gray-300 rounded-lg w-full sm:w-5/6"></div>
+            </div>
+          </div>
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3 w-full md:w-auto items-center md:items-end hidden sm:flex">
+             <div className="h-8 bg-gray-300 rounded-full w-24"></div>
+             <div className="h-10 bg-gray-300 rounded-xl w-32"></div>
+          </div>
+        </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
-        ))}
-      </div>
+        {/* 2. STAT CARDS SKELETON */}
+        <div>
+          <div className="flex justify-end mb-4">
+            <div className="h-9 bg-gray-200 rounded-lg w-28"></div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-gray-100 rounded-2xl p-5 border border-gray-200 h-36 flex flex-col justify-center">
+                <div className="w-10 h-10 rounded-full bg-gray-300 mb-4"></div>
+                <div className="h-4 bg-gray-300 rounded-md w-24 mb-3"></div>
+                <div className="h-7 bg-gray-300 rounded-lg w-20"></div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Charts & Recent Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 h-80 bg-gray-200 rounded-4xl"></div>
-        <div className="lg:col-span-4 h-80 bg-gray-200 rounded-4xl"></div>
-      </div>
+        {/* 3. RECENT ORDERS SKELETON */}
+        <div className="bg-white rounded-4xl p-6 border border-gray-100 shadow-sm flex flex-col min-h-[300px]">
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-6 bg-gray-200 rounded-lg w-32"></div>
+            <div className="h-4 bg-gray-200 rounded-md w-16"></div>
+          </div>
+          
+          <div className="flex-1 flex flex-col gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-300 rounded-md w-32"></div>
+                    <div className="h-3 bg-gray-200 rounded-md w-20"></div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="h-4 bg-gray-300 rounded-md w-16"></div>
+                  <div className="h-5 bg-gray-300 rounded-md w-24"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Bottom Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-4 h-72 bg-gray-200 rounded-4xl"></div>
-        <div className="lg:col-span-4 h-72 bg-gray-200 rounded-4xl"></div>
-        <div className="lg:col-span-4 h-72 bg-gray-200 rounded-4xl"></div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-
-//
 // 2. PRODUCTS SKELETON
-//
+
 export const ProductsSkeleton = () => (
   <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full animate-pulse">
     <div className="w-full max-w-4xl mx-auto space-y-6">
