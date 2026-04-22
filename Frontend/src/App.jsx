@@ -60,7 +60,7 @@ const router = createBrowserRouter([
       { path: "onboarding", element: <Onboarding /> },
       { path: "products", element: <Products /> },
       { path: "products/new", element: <AddEditProduct /> },
-      { path: "products/:id/edit", element: <AddEditProduct /> },
+      { path: "products/edit/:id", element: <AddEditProduct /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetails /> },
       { path: "messages", element: <Inbox /> },

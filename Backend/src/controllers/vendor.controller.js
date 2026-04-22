@@ -1,62 +1,65 @@
 const prisma = require('../config/db');
-const cloudinary = require('../config/cloudinary');
+// const cloudinary = require('../config/cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "sabisell_products" }, // Keeps Cloudinary dashboard neat
+      (error, result) => {
+        if (result) {
+          resolve(result.secure_url); // Returns the actual HTTP link
+        } else {
+          reject(error);
+        }
+      }
+    );
+    stream.end(buffer);
+  });
+};
 
 // @route   PUT /api/vendors/onboarding
-// @desc    Complete store setup (Name, Type, Description, Logo)
+// @desc    Complete store setup and add logo
 exports.completeOnboarding = async (req, res) => {
   try {
-    const vendorId = req.vendor.id; // Comes from our auth middleware
+    const vendorId = req.vendor.id; // From protect middleware
     const { storeName, storeType, storeDescription } = req.body;
 
+    // 1. Extract the Cloudinary URL for the single logo file
     let logoUrl = null;
-
-    // 1. If the user uploaded a logo, send it to Cloudinary
-    if (req.file) {
-      // Convert the memory buffer into a format Cloudinary can read
-      const b64 = Buffer.from(req.file.buffer).toString('base64');
-      const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-      
-      const uploadResponse = await cloudinary.uploader.upload(dataURI, {
-        folder: "sabisell/logos"
-      });
-      
-      logoUrl = uploadResponse.secure_url;
+    if (req.file && req.file.buffer) {
+      logoUrl = await uploadToCloudinary(req.file.buffer); // This is the live Cloudinary link
     }
 
-    // 2. Generate a clean, unique Store Link (e.g., "Zara Fashion" -> "zara-fashion")
-    let storeLink = null;
-    if (storeName) {
-      storeLink = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-      
-      // Safety check: Make sure no other vendor already took this exact link
-      const existingLink = await prisma.vendor.findUnique({ where: { storeLink } });
-      if (existingLink && existingLink.id !== vendorId) {
-        storeLink = `${storeLink}-${Math.floor(Math.random() * 10000)}`; // Append random number if taken
-      }
-    }
+    // Optional: Generate a simple store link (e.g., "Zara Stitches" -> "zara-stitches")
+    const storeLink = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
-    // 3. Update the Vendor in the Database
+    // 2. Update the Vendor record
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendorId },
       data: {
         storeName,
         storeType,
         storeDescription,
-        ...(logoUrl && { logoUrl }), // Only update logo if one was uploaded
-        ...(storeLink && { storeLink }),
-        isOnline: true // Store is now active!
+        storeLink,
+        isOnline: true,
+        // Only update the logoUrl in the DB if a new file was actually uploaded
+        ...(logoUrl && { logoUrl: logoUrl }) 
       }
     });
 
     res.status(200).json({
-      message: "Store setup completed successfully!",
+      message: "Store setup complete!",
       store: {
         storeName: updatedVendor.storeName,
         storeLink: updatedVendor.storeLink,
-        storeType: updatedVendor.storeType,
-        storeDescription: updatedVendor.storeDescription,
-        logoUrl: updatedVendor.logoUrl,
-        isOnline: updatedVendor.isOnline
+        logoUrl: updatedVendor.logoUrl
       }
     });
 

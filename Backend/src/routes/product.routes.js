@@ -11,4 +11,15 @@ router.post('/', protect, enforceProductLimit, upload.array('images', 5), produc
 // GET: Fetch all products for the dashboard
 router.get('/', protect, productController.getVendorProducts);
 
+// GET: Fetch a single product by ID
+router.get('/:id', protect, productController.getProductById);
+
+// PUT: Update an existing product (Notice we use upload.array to handle new images)
+router.put('/:id', protect, upload.array('images', 5), productController.updateProduct);
+
+// DELETE: Remove a specific product by ID
+router.delete('/:id', protect, productController.deleteProduct);
+
+module.exports = router;
+
 module.exports = router;

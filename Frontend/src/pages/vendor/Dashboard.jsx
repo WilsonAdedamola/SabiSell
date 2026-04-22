@@ -6,7 +6,7 @@ import {
   ShoppingBag, Headphones, PlayCircle, CheckCircle2, PackageOpen, CreditCard, Loader2
 } from "lucide-react";
 import api from '../../utils/api';
-import { DashboardSkeleton } from "./Skeletons";
+import { DashboardSkeleton } from "../../components/shared/Skeletons";
 
 const Dashboard = () => {
   const navigate = useNavigate();
