@@ -70,54 +70,111 @@ export const DashboardSkeleton = () => {
   );
 };
 
-// 2. PRODUCTS SKELETON
-
-export const ProductsSkeleton = () => (
-  <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full animate-pulse">
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="w-40 h-8 bg-gray-200 rounded-lg"></div>
-        <div className="hidden sm:block w-32 h-10 bg-gray-200 rounded-xl"></div>
-      </div>
-
-      {/* Search & Filter */}
-      <div className="flex gap-3">
-        <div className="grow h-12 bg-gray-200 rounded-xl"></div>
-        <div className="w-24 h-12 bg-gray-200 rounded-xl shrink-0"></div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-3 overflow-hidden">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="w-24 h-8 bg-gray-200 rounded-full shrink-0"></div>
-        ))}
-      </div>
-
-      {/* List Container */}
-      <div className="bg-gray-100 rounded-4xl overflow-hidden border border-gray-200">
-        <div className="h-16 bg-gray-200 border-b border-gray-300"></div>
-        <div className="divide-y divide-gray-200">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="p-4 sm:p-6 flex items-center gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-300 rounded-xl shrink-0"></div>
-              <div className="grow space-y-2.5">
-                <div className="flex justify-between">
-                  <div className="w-1/2 h-4 bg-gray-300 rounded"></div>
-                  <div className="w-1/4 h-4 bg-gray-300 rounded"></div>
-                </div>
-                <div className="w-1/3 h-3 bg-gray-300 rounded"></div>
-                <div className="w-2/5 h-3 bg-gray-300 rounded"></div>
-              </div>
+// PRODUCT LIST SKELETON
+export const ProductListSkeleton = () => {
+  return (
+    <div className="animate-pulse divide-y divide-gray-100 w-full">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="p-4 sm:p-6 flex items-center gap-4 w-full">
+          {/* Image Thumbnail */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-xl shrink-0"></div>
+          
+          <div className="grow flex flex-col gap-2.5">
+            {/* Title & Price Row */}
+            <div className="flex justify-between items-center w-full">
+              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-5 bg-gray-200 rounded w-16"></div>
             </div>
-          ))}
+            {/* Status & Stock Row */}
+            <div className="flex items-center gap-2">
+              <div className="h-4 bg-gray-200 rounded-full w-16"></div>
+              <div className="h-3 bg-gray-200 rounded w-20"></div>
+            </div>
+            {/* Category Row */}
+            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div className="w-8 h-8 bg-gray-200 rounded-lg hidden sm:block"></div>
+          </div>
         </div>
-      </div>
-      
+      ))}
     </div>
-  </div>
-);
+  );
+};
+
+// ADD/EDIT PRODUCT SKELETON
+export const AddEditProductSkeleton = () => {
+  return (
+    <div className="flex-1 overflow-y-auto h-full p-4 sm:p-6 lg:p-8 pb-32 lg:pb-20 w-full bg-sabi-surface animate-pulse">
+      <div className="w-full max-w-3xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+            <div className="w-32 h-7 bg-gray-200 rounded-lg"></div>
+          </div>
+          <div className="w-20 h-5 bg-gray-200 rounded-md"></div>
+        </div>
+
+        {/* Stepper */}
+        <div className="flex items-center justify-between relative mb-8 px-4 sm:px-10">
+          <div className="absolute left-10 right-10 top-3 h-0.5 bg-gray-200 z-0"></div>
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-sabi-surface px-2">
+            <div className="w-6 h-6 rounded-full bg-gray-200"></div>
+            <div className="w-16 h-3 bg-gray-200 rounded mt-1"></div>
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-sabi-surface px-2">
+            <div className="w-6 h-6 rounded-full bg-gray-200"></div>
+            <div className="w-16 h-3 bg-gray-200 rounded mt-1"></div>
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-sabi-surface px-2">
+            <div className="w-6 h-6 rounded-full bg-gray-200"></div>
+            <div className="w-16 h-3 bg-gray-200 rounded mt-1"></div>
+          </div>
+        </div>
+
+        {/* Form Container */}
+        <div className="bg-white rounded-3xl sm:rounded-4xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-8">
+          
+          {/* Images Section */}
+          <div>
+            <div className="w-32 h-4 bg-gray-200 rounded mb-2"></div>
+            <div className="w-48 h-3 bg-gray-100 rounded mb-4"></div>
+            <div className="flex gap-3 overflow-hidden">
+              <div className="w-24 h-24 rounded-2xl bg-gray-200 shrink-0"></div>
+              <div className="w-24 h-24 rounded-2xl bg-gray-200 shrink-0"></div>
+              <div className="w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 shrink-0"></div>
+            </div>
+          </div>
+
+          {/* Inputs Section */}
+          <div className="space-y-6">
+            <div>
+              <div className="w-24 h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="w-full h-14 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div>
+              <div className="w-24 h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="w-full h-14 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div>
+              <div className="w-32 h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="w-full h-32 bg-gray-200 rounded-xl"></div>
+            </div>
+          </div>
+
+          {/* Bottom Button */}
+          <div className="w-full h-14 bg-gray-200 rounded-xl mt-4"></div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
 
 
 //
