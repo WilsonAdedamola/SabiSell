@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // baseURL: 'http://localhost:5000/api',
-  baseURL: 'https://sabisell.onrender.com',
+  baseURL: 'https://sabisell.onrender.com/api',
 });
 
 // 1. REQUEST INTERCEPTOR: Attach the token
