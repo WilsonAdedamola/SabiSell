@@ -7,6 +7,11 @@ dotenv.config();
 
 const app = express();
 
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
 // Middlewares
 app.use(cors()); 
 app.use(express.json()); 
@@ -30,10 +35,4 @@ app.use('/api/storefront', storefrontRoutes);
 // A simple test route
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'success', message: 'SabiSell Backend is running!' });
-});
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
 });
