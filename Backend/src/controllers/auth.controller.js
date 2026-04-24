@@ -91,6 +91,10 @@ exports.login = async (req, res) => {
         id: vendor.id,
         fullName: vendor.fullName,
         email: vendor.email,
+        storeName: vendor.storeName,
+        storeType: vendor.storeType,
+        storeLink: vendor.storeLink,
+        logoUrl: vendor.logoUrl,
         plan: vendor.plan,
         isOnline: vendor.isOnline
       }

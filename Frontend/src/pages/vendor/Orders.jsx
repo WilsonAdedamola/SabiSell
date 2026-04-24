@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Download, Eye, Phone // <-- Added Phone
 } from "lucide-react";
 import api from '../../utils/api'; 
+import { OrdersSkeleton } from "../../components/shared/Skeletons";
 
 const Orders = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -75,10 +76,22 @@ const Orders = () => {
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, activeTab, sortOption]);
 
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000)
+    return () => clearTimeout(timer);
+  }, []);
+
   // Metrics Calculations
   const totalRevenue = orders.filter(o => o.status !== "Cancelled").reduce((sum, order) => sum + order.total, 0);
   const pendingCount = orders.filter(o => o.status === "Pending").length;
   const completedCount = orders.filter(o => o.status === "Delivered").length;
+
+  if (isLoading) {
+    return <OrdersSkeleton />;
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative bg-sabi-surface">

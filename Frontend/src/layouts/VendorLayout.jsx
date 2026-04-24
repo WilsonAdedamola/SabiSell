@@ -1,29 +1,34 @@
 import { useState, useEffect } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, Store, Package, ClipboardList, Users, 
   BarChart2, Tag, QrCode, CreditCard, Settings, HelpCircle,
   Search, Bell, ExternalLink, Menu, X, Plus,
   ChevronRight, Rocket, MessageCircle,
-  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen
+  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
+import ConfirmModal from "../components/shared/ConfirmModal"; // <-- Make sure this path is correct!
 
 const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+  
+  // --- MODAL STATE ---
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
   const location = useLocation();
+  const navigate = useNavigate();
 
   // --- DYNAMIC VENDOR STATE ---
   const [vendorData, setVendorData] = useState({
-    name: "Vendor", // Default fallback
+    name: "Vendor",
     storeName: null,
     storeType: null,
     logoUrl: null,
     isOnline: false
   });
 
-  // Fetch data from localStorage on mount
   useEffect(() => {
     const fetchVendorData = () => {
       const storedData = localStorage.getItem('sabisell_vendor');
@@ -37,12 +42,23 @@ const VendorLayout = () => {
     return () => window.removeEventListener('storage', fetchVendorData);
   }, []);
 
-  // Determine Display Variables
   const hasStore = vendorData.isOnline && vendorData.storeName;
   const displayName = hasStore ? vendorData.storeName : vendorData.name;
   const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
 
-  // Navigation Arrays
+  // --- LOGOUT LOGIC ---
+  const handleLogoutClick = () => {
+    setIsMobileMenuOpen(false); // Close mobile menu if it's open
+    setIsLogoutModalOpen(true); // Open the modal
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem('sabisell_token');
+    localStorage.removeItem('sabisell_vendor');
+    navigate('/login', { replace: true });
+  };
+
+  // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [
       { name: "My Store", icon: Store, path: "/dashboard/store" },
@@ -70,7 +86,6 @@ const VendorLayout = () => {
     { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
   ];
 
-  // --- REUSABLE AVATAR COMPONENT ---
   const DynamicAvatar = ({ size = "w-10 h-10" }) => (
     <div className={`${size} rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}>
       {hasStore && vendorData.logoUrl ? (
@@ -85,7 +100,7 @@ const VendorLayout = () => {
     </div>
   );
 
-  // --- SIDEBAR CONTENT ---
+  // --- REUSABLE SIDEBAR COMPONENT ---
   const SidebarContent = ({ collapsed = false }) => (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6 justify-between lg:justify-start'} border-b border-gray-100 shrink-0 transition-all duration-300`}>
@@ -149,6 +164,19 @@ const VendorLayout = () => {
             </div>
           </div>
         ))}
+
+        {/* LOGOUT BUTTON */}
+        <div className={collapsed ? "mt-auto pt-4" : "mt-8 pt-4 border-t border-gray-100"}>
+          <button 
+            onClick={handleLogoutClick}
+            className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl font-bold transition-all text-red-600 hover:bg-red-50`}
+            title={collapsed ? "Log Out" : ""}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!collapsed && <span>Log Out</span>}
+          </button>
+        </div>
+
       </div>
 
       {!collapsed && (
@@ -175,6 +203,17 @@ const VendorLayout = () => {
   return (
     <div className="flex h-screen bg-gray-50/50 font-sans overflow-hidden">
       
+      {/* --- CONFIRM LOGOUT MODAL --- */}
+      <ConfirmModal 
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Log Out?"
+        message="Are you sure you want to log out of your dashboard? You will need to sign back in to manage your store."
+        confirmText="Yes, Log Out"
+        cancelText="Cancel"
+      />
+
       {/* DESKTOP SIDEBAR */}
       <aside 
         className={`hidden lg:block ${isDesktopCollapsed ? 'w-22' : 'w-70'} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}
@@ -198,8 +237,6 @@ const VendorLayout = () => {
         {/* DESKTOP HEADER */}
         <header className="hidden lg:flex h-20 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0 z-10">
           <div className="flex items-center gap-4">
-            
-            {/* DYNAMIC SIDEBAR TOGGLE */}
             <button 
               onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
               className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors shrink-0"
@@ -231,7 +268,6 @@ const VendorLayout = () => {
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
             
-            {/* DYNAMIC PROFILE INFO */}
             <button className="flex items-center gap-3 pl-2">
               <DynamicAvatar size="w-10 h-10" />
               <div className="text-left hidden xl:block">
@@ -241,7 +277,6 @@ const VendorLayout = () => {
                 </p>
               </div>
             </button>
-
           </div>
         </header>
 
@@ -261,8 +296,6 @@ const VendorLayout = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
-            
-            {/* DYNAMIC PROFILE AVATAR FOR MOBILE */}
             <DynamicAvatar size="w-8 h-8" />
           </div>
         </header>
@@ -275,7 +308,6 @@ const VendorLayout = () => {
         {/* MOBILE BOTTOM NAVIGATION */}
         <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-40 pb-safe">
           <div className="flex items-center justify-between px-2 h-16 relative">
-            
             <div className="absolute -top-6 left-1/2 -translate-x-1/2">
                <Link to="/dashboard/products/new" className="flex items-center justify-center w-14 h-14 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-full shadow-lg border-4 border-white transition-transform active:scale-95">
                   <Plus className="w-6 h-6" />
