@@ -10,6 +10,7 @@ const upload = require('../middlewares/upload.middleware');
 // 3. "completeOnboarding": Run the logic.
 router.put('/onboarding', protect, upload.single('logo'), vendorController.completeOnboarding);
 router.get('/dashboard', protect, vendorController.getDashboardStats);
+router.get('/check-link', protect, vendorController.checkStoreLink);
 
 
 module.exports = router;

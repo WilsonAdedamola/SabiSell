@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Store, Upload, Camera, CheckCircle2, 
+  Store, Upload, Camera, CheckCircle2, XCircle,
   ArrowLeft, Lightbulb, Tag, Image as ImageIcon,
   LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, ArrowRight, Rocket, Loader2, AlertCircle
 } from "lucide-react";
@@ -18,13 +18,17 @@ const VendorOnboarding = () => {
 
   // --- FORM DATA STATE ---
   // Step 1: Store Details
-  const [storeData, setStoreData] = useState({ storeName: "", storeDescription: "" });
+  const [storeData, setStoreData] = useState({ storeName: "", storeLink: "", storeDescription: "" });
   
+  // Link validation states
+  const [linkStatus, setLinkStatus] = useState("idle"); // 'idle', 'checking', 'available', 'unavailable'
+  const [linkMessage, setLinkMessage] = useState("");
+
   // Step 2: Logo
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
-  // Step 3: First Product (Pre-filled with placeholders to encourage submission)
+  // Step 3: First Product
   const [productData, setProductData] = useState({ 
     name: "Ankara Print Shirt", 
     price: "15000", 
@@ -58,7 +62,56 @@ const VendorOnboarding = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // --- STORE LINK LIVE VALIDATION (DEBOUNCED) ---
+  useEffect(() => {
+    if (!storeData.storeLink) {
+      setLinkStatus("idle");
+      setLinkMessage("");
+      return;
+    }
+
+    setLinkStatus("checking");
+    
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const response = await api.get(`/vendors/check-link?slug=${storeData.storeLink}`);
+        if (response.data.available) {
+          setLinkStatus("available");
+          setLinkMessage("This store link is available!");
+        } else {
+          setLinkStatus("unavailable");
+          setLinkMessage(response.data.message);
+        }
+      } catch (err) {
+        setLinkStatus("unavailable");
+        setLinkMessage("Could not verify link. Please try again.");
+      }
+    }, 600);
+
+    return () => clearTimeout(debounceTimer);
+  }, [storeData.storeLink]);
+
   // --- INPUT HANDLERS ---
+  const handleNameChange = (e) => {
+    const newName = e.target.value;
+    const currentAutoSlug = storeData.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    
+    // Auto-fill the storeLink only if they haven't manually typed one yet
+    if (storeData.storeLink === "" || storeData.storeLink === currentAutoSlug) {
+      const autoSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      setStoreData({ ...storeData, storeName: newName, storeLink: autoSlug });
+    } else {
+      setStoreData({ ...storeData, storeName: newName });
+    }
+  };
+
+  const handleLinkChange = (e) => {
+    const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '');
+    setStoreData({ ...storeData, storeLink: formatted });
+    setLinkStatus("idle");
+    setLinkMessage("");
+  };
+
   const handleStoreChange = (e) => setStoreData({ ...storeData, [e.target.name]: e.target.value });
   const handleProductChange = (e) => setProductData({ ...productData, [e.target.name]: e.target.value });
 
@@ -66,7 +119,7 @@ const VendorOnboarding = () => {
     const file = e.target.files[0];
     if (file) {
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file)); // Creates an instant preview URL
+      setLogoPreview(URL.createObjectURL(file)); 
     }
   };
 
@@ -81,11 +134,17 @@ const VendorOnboarding = () => {
   // --- NAVIGATION VALIDATION ---
   const nextStep = () => {
     setError('');
-    // Ensure they filled out Step 1 before moving on
+    
+    // Ensure Step 1 is fully filled and link is valid
     if (step === 1) {
       if (!storeData.storeName) return setError("Please enter a Store Name.");
+      if (!storeData.storeLink) return setError("Please enter a Custom Store Link.");
+      if (linkStatus === "checking" || linkStatus === "unavailable") {
+        return setError("Please choose an available store link before proceeding.");
+      }
       if (!selectedStoreType) return setError("Please select a Store Type.");
     }
+
     if (step < 3) setStep(step + 1); 
   };
   
@@ -100,18 +159,19 @@ const VendorOnboarding = () => {
       // 1. Submit Store Data
       const storeFormData = new FormData();
       storeFormData.append('storeName', storeData.storeName);
+      storeFormData.append('storeLink', storeData.storeLink); // Send verified link
       storeFormData.append('storeType', selectedStoreType.name);
       storeFormData.append('storeDescription', storeData.storeDescription);
       if (logoFile) storeFormData.append('logo', logoFile);
 
       const storeRes = await api.put('/vendors/onboarding', storeFormData);
 
-      // 2. Submit Product Data (Only if they kept a name)
+      // 2. Submit Product Data 
       if (productData.name) {
         const prodFormData = new FormData();
         prodFormData.append('name', productData.name);
         prodFormData.append('description', productData.description);
-        prodFormData.append('price', productData.price.replace(/,/g, '')); // Remove commas for the backend
+        prodFormData.append('price', productData.price.replace(/,/g, ''));
         prodFormData.append('category', productData.category);
         prodFormData.append('stockQuantity', 10); 
         prodFormData.append('status', "ACTIVE");
@@ -120,16 +180,17 @@ const VendorOnboarding = () => {
         await api.post('/products', prodFormData);
       }
 
-      // 3. Update localStorage so the Dashboard knows they are Online
+      // 3. Update localStorage
       const currentVendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
       const updatedVendor = {
         ...currentVendorData,
         storeName: storeRes.data.store.storeName,
         storeLink: storeRes.data.store.storeLink,
         logoUrl: storeRes.data.store.logoUrl,
-        isOnline: true // The magic key!
+        isOnline: true 
       };
       localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
+      window.dispatchEvent(new Event("storage")); // Instantly update header
 
       // 4. Blast off to the dashboard!
       navigate("/dashboard");
@@ -204,15 +265,48 @@ const VendorOnboarding = () => {
                              type="text" 
                              name="storeName"
                              value={storeData.storeName}
-                             onChange={handleStoreChange}
+                             onChange={handleNameChange} // Using the new auto-slug handler
                              placeholder="e.g. Zara Stitches & Fashion" 
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
                            />
                         </div>
                      </div>
 
+                     {/* Custom Store Link Input with Live Validation */}
+                     <div className="lg:col-span-1">
+                        <label className="block text-sm font-bold text-gray-900 mb-2">Custom Store Link</label>
+                        <div className="flex rounded-2xl overflow-hidden shadow-sm border-2 border-gray-100 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all bg-white">
+                           <span className="flex items-center px-3 sm:px-4 bg-gray-50 text-gray-500 border-r-2 border-gray-100 text-xs sm:text-sm font-medium whitespace-nowrap">
+                              sabisell.com/
+                           </span>
+                           <div className="relative flex-1">
+                              <input 
+                                type="text" 
+                                name="storeLink"
+                                value={storeData.storeLink}
+                                onChange={handleLinkChange}
+                                placeholder="zara-stitches" 
+                                className="w-full pl-3 pr-10 py-4 bg-transparent focus:outline-none font-bold text-gray-900 text-sm sm:text-base" 
+                              />
+                              {/* Validation Status Icons */}
+                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                 {linkStatus === "checking" && <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />}
+                                 {linkStatus === "available" && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                                 {linkStatus === "unavailable" && <XCircle className="w-5 h-5 text-red-500" />}
+                              </div>
+                           </div>
+                        </div>
+                        
+                        {/* Validation Message */}
+                        <div className="mt-2 h-4">
+                           {linkStatus === "available" && <p className="text-xs font-bold text-emerald-600">{linkMessage}</p>}
+                           {linkStatus === "unavailable" && <p className="text-xs font-bold text-red-500">{linkMessage}</p>}
+                           {linkStatus === "idle" && storeData.storeLink && <p className="text-xs font-medium text-gray-500">This will be your public shop link.</p>}
+                        </div>
+                     </div>
+
                      {/* Custom Store Type Dropdown */}
-                     <div ref={dropdownRef} className="relative z-50 lg:col-span-1">
+                     <div ref={dropdownRef} className="relative z-50 lg:col-span-2">
                         <label className="block text-sm font-bold text-gray-900 mb-2">Store Type</label>
                         <button 
                           type="button"
@@ -452,7 +546,11 @@ const VendorOnboarding = () => {
           <div className="p-5 sm:p-8 border-t border-gray-100 bg-gray-50/50 shrink-0 z-20">
              {step === 1 && (
                <div className="flex justify-end">
-                  <button onClick={nextStep} className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer">
+                  <button 
+                    onClick={nextStep} 
+                    disabled={linkStatus === "checking" || linkStatus === "unavailable"}
+                    className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                      Continue to Logo Upload <ArrowRight className="w-5 h-5" />
                   </button>
                </div>
