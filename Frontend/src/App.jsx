@@ -1,4 +1,3 @@
-import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 // 1. LAYOUTS
@@ -29,7 +28,7 @@ import Settings from './pages/vendor/Settings';
 import Billing from './pages/vendor/Billing';
 
 // 5. CUSTOMER STOREFRONT PAGES (No Login Required)
-import StoreHome from './pages/store/StoreHome';
+import Storefront from './pages/store/StoreFront';
 import ProductDetails from './pages/store/ProductDetails';
 import Cart from './pages/store/Cart';
 import Checkout from './pages/store/Checkout';
@@ -75,7 +74,7 @@ const router = createBrowserRouter([
     path: "/:storeSlug",
     element: <StoreLayout />,
     children: [
-      { index: true, element: <StoreHome /> },
+      { index: true, element: <Storefront /> },
       { path: "product/:id", element: <ProductDetails /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <Checkout /> },
