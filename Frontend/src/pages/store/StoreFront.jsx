@@ -408,16 +408,23 @@
 
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom"; 
 import { 
   ShoppingBag, Search, Plus, Minus, Copy,
   MapPin, Loader2, ChevronRight, 
-  Phone, Mail, MessageCircle, ShieldCheck, Lock, CheckCircle2,
-  } from "lucide-react";
+  Phone, Mail, MessageCircle, ShieldCheck, Lock, CheckCircle2
+} from "lucide-react";
 import api from '../../utils/api'; 
 import { useCart } from '../../context/CartContext'; 
 
 const Storefront = () => {
+  const { fallbackStoreLink } = useParams(); 
+
+  // --- NEW: DYNAMIC BASE PATH LOGIC ---
+  // If we are on Vercel free tier, basePath will be "/store/store-name"
+  // If we are on a custom subdomain, basePath will be ""
+  const basePath = fallbackStoreLink ? `/store/${fallbackStoreLink}` : "";
+
   const [isLoading, setIsLoading] = useState(true);
   const [store, setStore] = useState(null);
   const [error, setError] = useState(null);
@@ -428,7 +435,7 @@ const Storefront = () => {
 
   const { cart, addToCart, updateQuantity, cartTotalItems, cartTotalPrice } = useCart();
 
-  // FETCH STORE & PRODUCTS BASED ON SUBDOMAIN
+  // --- FETCH STORE & PRODUCTS ---
   useEffect(() => {
     const hostname = window.location.hostname; 
     
@@ -441,15 +448,16 @@ const Storefront = () => {
       'www.sabisell.com'
     ];
 
-    // If somehow a user hits this component but they are on the main domain, redirect them
-    if (mainDomains.includes(hostname)) {
+    let storeLink = null;
+
+    if (fallbackStoreLink) {
+      storeLink = fallbackStoreLink;
+    } else if (!mainDomains.includes(hostname)) {
+      storeLink = hostname.split('.')[0];
+    } else {
       window.location.href = "/"; 
       return;
     }
-
-    // Because we know it's a subdomain, the store link is always the very first part before the first dot!
-    // e.g., "zara.sabisell.vercel.app" -> split -> ["zara", "sabisell", "vercel", "app"] -> [0] is "zara"
-    const storeLink = hostname.split('.')[0];
 
     const fetchStore = async () => {
       try {
@@ -463,10 +471,11 @@ const Storefront = () => {
     };
 
     fetchStore();
-  }, []);
+  }, [fallbackStoreLink]); 
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.origin);
+    // Generate the full URL dynamically based on the current domain
+    navigator.clipboard.writeText(window.location.href.split('?')[0]); // Safer copy
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -499,7 +508,6 @@ const Storefront = () => {
     );
   }
 
-  // --- DYNAMIC STYLING ---
   const themeStyle = { backgroundColor: store.themeColor || "#044e3b" };
   const textThemeStyle = { color: store.themeColor || "#044e3b" };
 
@@ -526,7 +534,8 @@ const Storefront = () => {
         {/* Main Header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
           
-          <Link to="/" className="flex items-center gap-3 shrink-0">
+          {/* APPLIED BASEPATH */}
+          <Link to={basePath || "/"} className="flex items-center gap-3 shrink-0">
             {store.logoUrl ? (
               <img src={store.logoUrl} alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover shadow-sm border border-gray-100" />
             ) : (
@@ -562,7 +571,8 @@ const Storefront = () => {
             <button className="md:hidden p-2 text-gray-600">
                <Search className="w-5 h-5" />
             </button>
-            <Link to="/cart" className="relative p-2 flex items-center gap-2 group">
+            {/* APPLIED BASEPATH */}
+            <Link to={`${basePath}/cart`} className="relative p-2 flex items-center gap-2 group">
               <div className="relative">
                 <ShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 text-gray-800 transition-colors" />
                 {cartTotalItems > 0 && (
@@ -588,7 +598,6 @@ const Storefront = () => {
       {/* 2. PROMO HERO BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 w-full animate-in fade-in duration-500">
          <div className="w-full h-40 sm:h-56 lg:h-72 rounded-3xl overflow-hidden relative shadow-md flex items-center" style={themeStyle}>
-            {/* Background Image: Falls back to a generic stylish image if the vendor has no custom banner */}
             <img 
                src={store.bannerImage || "https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=1200&q=80"} 
                alt="Promo Background" 
@@ -653,8 +662,8 @@ const Storefront = () => {
               return (
                 <div key={product.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 active:scale-[0.98] transition-all duration-300 flex flex-col group p-1.5 sm:p-2">
                   
-                  {/* Product Image Area - bg-gray-50/50 and mix-blend-multiply removes the harsh white squares! */}
-                  <Link to={`/product/${product.id}`} className="block relative aspect-[4/5] bg-gray-50/50 rounded-2xl overflow-hidden flex items-center justify-center">
+                  {/* APPLIED BASEPATH */}
+                  <Link to={`${basePath}/product/${product.id}`} className="block relative aspect-[4/5] bg-gray-50/50 rounded-2xl overflow-hidden flex items-center justify-center">
                     {product.imageUrls?.[0] ? (
                       <img 
                         src={product.imageUrls[0]} 
@@ -679,7 +688,8 @@ const Storefront = () => {
                   
                   {/* Product Details */}
                   <div className="p-3 sm:p-4 flex flex-col grow">
-                    <Link to={`/product/${product.id}`}>
+                    {/* APPLIED BASEPATH */}
+                    <Link to={`${basePath}/product/${product.id}`}>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{product.category !== "General Product" ? product.category : "Product"}</span>
                       <h4 className="text-sm sm:text-base font-bold text-gray-900 leading-tight mb-2 group-hover:text-gray-600 transition-colors line-clamp-2">
                         {product.name}
@@ -782,7 +792,7 @@ const Storefront = () => {
                     )}
                  </div>
                  {store.instagram && (
-                   <a href={`https://instagram.com/${store.instagram}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition-colors text-sm font-bold">
+                   <a href={store.instagram} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition-colors text-sm font-bold">
                      IG Follow on Instagram
                    </a>
                  )}
@@ -797,7 +807,7 @@ const Storefront = () => {
                     <div className="flex items-center justify-between bg-gray-50 rounded-xl p-2.5 border border-gray-200">
                        <div className="flex items-center gap-2 overflow-hidden text-gray-700 px-2">
                           <Lock className="w-4 h-4 shrink-0" style={textThemeStyle} />
-                          <span className="text-sm font-medium truncate">{window.location.hostname}</span>
+                          <span className="text-sm font-medium truncate">{window.location.host}{basePath}</span>
                        </div>
                        <button 
                          onClick={handleCopyLink}
@@ -829,16 +839,17 @@ const Storefront = () => {
               <div className="md:col-span-3 lg:col-span-4">
                  <h4 className="font-bold text-gray-900 mb-6">Quick Links</h4>
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    <li><Link to="/" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Home</Link></li>
-                    <li><Link to="/cart" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
+                    {/* APPLIED BASEPATH */}
+                    <li><Link to={basePath || "/"} className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Home</Link></li>
+                    <li><Link to={`${basePath}/cart`} className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
                     <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Return Policy</a></li>
                     <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Delivery Information</a></li>
                  </ul>
                  
                  {/* Extra Socials */}
                  <div className="flex gap-3 mt-6">
-                    {store.facebook && <a href={`https://facebook.com/${store.facebook}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100">FB</a>}
-                    {store.twitter && <a href={`https://twitter.com/${store.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200">TW</a>}
+                    {store.facebook && <a href={store.facebook} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100">FB</a>}
+                    {store.twitter && <a href={store.twitter} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200">TW</a>}
                  </div>
               </div>
            </div>

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
 import ConfirmModal from "../components/shared/ConfirmModal"; 
+import api from "../utils/api"; // <-- ADDED: Need this to fetch dynamic stats!
 
 const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,6 +31,13 @@ const VendorLayout = () => {
     storeLink: null
   });
 
+  // --- DYNAMIC BADGE STATE ---
+  const [stats, setStats] = useState({
+    products: 0,
+    orders: 0
+  });
+
+  // --- 1. FETCH VENDOR LOCALLY ---
   useEffect(() => {
     const fetchVendorData = () => {
       const storedData = localStorage.getItem('sabisell_vendor');
@@ -43,15 +51,49 @@ const VendorLayout = () => {
     return () => window.removeEventListener('storage', fetchVendorData);
   }, []);
 
+  // --- 2. FETCH BADGE STATS ---
+  useEffect(() => {
+    const fetchSidebarStats = async () => {
+      try {
+        // Try hitting your dashboard stats endpoint first
+        const res = await api.get('/dashboard/stats');
+        setStats({
+          products: res.data.totalProducts || 0,
+          orders: res.data.totalOrders || 0
+        });
+      } catch (error) {
+        // Fallback: If that endpoint doesn't exist yet, just fetch the lists directly to get the lengths
+        try {
+          const prodRes = await api.get('/products');
+          const ordRes = await api.get('/orders');
+          setStats({
+            products: prodRes.data.products?.length || 0,
+            orders: ordRes.data.orders?.length || 0
+          });
+        } catch (e) {
+          console.error("Failed to load sidebar badge stats");
+        }
+      }
+    };
+
+    // Only fetch if they are properly logged in
+    if (localStorage.getItem('sabisell_token')) {
+      fetchSidebarStats();
+    }
+  }, [location.pathname]); // Re-fetch occasionally when navigating
+
   const hasStore = vendorData.isOnline && vendorData.storeName;
   const displayName = hasStore ? vendorData.storeName : vendorData.name;
   const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
 
-  // --- DYNAMIC STORE URL ---
-  // Generates http://storelink.localhost:5173 or https://storelink.sabisell.com
+  // --- DYNAMIC STORE URL (Vercel Fallback Support) ---
+  const isFreeHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost');
+  
   const storeUrl = vendorData?.storeLink 
-    ? `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}` 
-    : "/dashboard/settings"; // Fallback to settings if no store link is set
+    ? (isFreeHost 
+        ? `/store/${vendorData.storeLink}` 
+        : `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}`)
+    : "/dashboard/settings";
 
   // --- LOGOUT LOGIC ---
   const handleLogoutClick = () => {
@@ -68,10 +110,10 @@ const VendorLayout = () => {
   // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [
-      // NEW: Added external flag and dynamic storeUrl
       { name: "My Store", icon: Store, path: storeUrl, external: !!vendorData?.storeLink },
-      { name: "Products", icon: Package, path: "/dashboard/products", badge: "12" },
-      { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: "36", badgeColor: "bg-emerald-100 text-emerald-800" },
+      // NEW: Dynamic badges applied!
+      { name: "Products", icon: Package, path: "/dashboard/products", badge: stats.products > 0 ? stats.products.toString() : null },
+      { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: stats.orders > 0 ? stats.orders.toString() : null, badgeColor: "bg-emerald-100 text-emerald-800" },
       { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
       { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
     ]},
@@ -165,7 +207,6 @@ const VendorLayout = () => {
                   </>
                 );
 
-                // NEW: If external, render an <a> tag. Otherwise, standard React Router <Link>
                 return item.external ? (
                   <a
                     key={itemIdx}
@@ -289,7 +330,6 @@ const VendorLayout = () => {
               <HelpCircle className="w-4 h-4 text-sabi-primary" /> Help & Support
             </button>
             
-            {/* NEW: Updated Top Header External Link */}
             <a href={storeUrl} target={vendorData?.storeLink ? "_blank" : "_self"} rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
               <ExternalLink className="w-4 h-4 text-sabi-primary" /> View Store
             </a>
