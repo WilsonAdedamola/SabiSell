@@ -15,7 +15,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
 
-// 4. VENDOR PAGES (The Core App)
+// 4. VENDOR PAGES
 import Onboarding from './pages/vendor/Onboarding';
 import Dashboard from './pages/vendor/Dashboard';
 import Products from './pages/vendor/Products';
@@ -27,7 +27,7 @@ import ChatScreen from './pages/vendor/ChatScreen';
 import Settings from './pages/vendor/Settings';
 import Billing from './pages/vendor/Billing';
 
-// 5. CUSTOMER STOREFRONT PAGES (No Login Required)
+// 5. CUSTOMER STOREFRONT PAGES
 import Storefront from './pages/store/StoreFront';
 import ProductDetails from './pages/store/ProductDetails';
 import Cart from './pages/store/Cart';
@@ -38,15 +38,12 @@ import OrderSuccess from './pages/store/OrderSuccess';
 import NotFound from './pages/errors/NotFound';
 
 // ==========================================
-// ROUTER 1: MAIN SAAS APP (sabisell.com)
+// ROUTER 1: MAIN SAAS APP 
 // ==========================================
 const mainRouter = createBrowserRouter([
-  // MARKETING WEBSITE
   { path: "/", element: <Landing /> },
   { path: "/pricing", element: <Pricing /> },
   { path: "/faq", element: <FAQ /> },
-
-  // AUTHENTICATION FLOW
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
@@ -71,16 +68,27 @@ const mainRouter = createBrowserRouter([
     ],
   },
 
-  // CATCH-ALL 404
+  // FREE TIER FALLBACK ROUTE (sabisell.vercel.app/store/store-name)
+  {
+    path: "/store/:fallbackStoreLink",
+    element: <StoreLayout />,
+    children: [
+      { index: true, element: <Storefront /> },
+      { path: "product/:id", element: <ProductDetails /> },
+      { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <Checkout /> },
+      { path: "success", element: <OrderSuccess /> },
+    ],
+  },
+
   { path: "*", element: <NotFound /> }
 ]);
 
 // ==========================================
-// ROUTER 2: STOREFRONT APP (store.sabisell.com)
+// ROUTER 2: STOREFRONT APP (For Custom Domains)
 // ==========================================
 const storeRouter = createBrowserRouter([
   {
-    // Notice how the path is just "/", because the store slug is now in the domain!
     path: "/",
     element: <StoreLayout />,
     children: [
@@ -91,26 +99,12 @@ const storeRouter = createBrowserRouter([
       { path: "success", element: <OrderSuccess /> },
     ],
   },
-  // CATCH-ALL 404 FOR STORES
   { path: "*", element: <NotFound /> }
 ]);
 
-// ROOT COMPONENT: DOMAIN ROUTING LOGIC
 const App = () => {
   const hostname = window.location.hostname;
-  
-  // Define the base domains where the main SaaS app should load.
-  // Add any future custom domains (like 'sabisell.com') to this list.
-  const mainDomains = [
-    'localhost',
-    '127.0.0.1',
-    'sabisell.vercel.app',
-    'www.sabisell.vercel.app',
-    'sabisell.com',
-    'www.sabisell.com'
-  ];
-
-  // If the current hostname is NOT in the list above, it must be a vendor's subdomain!
+  const mainDomains = ['localhost', '127.0.0.1', 'sabisell.vercel.app', 'www.sabisell.vercel.app', 'sabisell.com', 'www.sabisell.com'];
   const isSubdomain = !mainDomains.includes(hostname);
 
   return <RouterProvider router={isSubdomain ? storeRouter : mainRouter} />;
