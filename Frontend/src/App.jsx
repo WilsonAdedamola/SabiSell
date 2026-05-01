@@ -95,27 +95,24 @@ const storeRouter = createBrowserRouter([
   { path: "*", element: <NotFound /> }
 ]);
 
-
-// ==========================================
 // ROOT COMPONENT: DOMAIN ROUTING LOGIC
-// ==========================================
 const App = () => {
   const hostname = window.location.hostname;
-  const parts = hostname.split('.');
   
-  let isSubdomain = false;
+  // Define the base domains where the main SaaS app should load.
+  // Add any future custom domains (like 'sabisell.com') to this list.
+  const mainDomains = [
+    'localhost',
+    '127.0.0.1',
+    'sabisell.vercel.app',
+    'www.sabisell.vercel.app',
+    'sabisell.com',
+    'www.sabisell.com'
+  ];
 
-  // Check if we are on a production subdomain (e.g., zara.sabisell.com)
-  if (parts.length >= 3 && parts[0] !== 'www') {
-    isSubdomain = true;
-  } 
-  // Check if we are on a local testing subdomain (e.g., zara.localhost)
-  else if (hostname.includes('localhost') && parts.length === 2) {
-    isSubdomain = true;
-  }
+  // If the current hostname is NOT in the list above, it must be a vendor's subdomain!
+  const isSubdomain = !mainDomains.includes(hostname);
 
-  // If a valid subdomain is detected, hijack the app and serve the Store Router.
-  // Otherwise, serve the Main SaaS Router.
   return <RouterProvider router={isSubdomain ? storeRouter : mainRouter} />;
 };
 

@@ -428,22 +428,28 @@ const Storefront = () => {
 
   const { cart, addToCart, updateQuantity, cartTotalItems, cartTotalPrice } = useCart();
 
-  // --- FETCH STORE & PRODUCTS BASED ON SUBDOMAIN ---
+  // FETCH STORE & PRODUCTS BASED ON SUBDOMAIN
   useEffect(() => {
     const hostname = window.location.hostname; 
-    const parts = hostname.split('.');
-    let storeLink = null;
     
-    if (parts.length >= 3 && parts[0] !== 'www') {
-      storeLink = parts[0];
-    } else if (hostname.includes('localhost') && parts.length === 2) {
-      storeLink = parts[0];
-    }
+    const mainDomains = [
+      'localhost',
+      '127.0.0.1',
+      'sabisell.vercel.app',
+      'www.sabisell.vercel.app',
+      'sabisell.com',
+      'www.sabisell.com'
+    ];
 
-    if (!storeLink) {
-      window.location.href = "https://sabisell.com"; 
+    // If somehow a user hits this component but they are on the main domain, redirect them
+    if (mainDomains.includes(hostname)) {
+      window.location.href = "/"; 
       return;
     }
+
+    // Because we know it's a subdomain, the store link is always the very first part before the first dot!
+    // e.g., "zara.sabisell.vercel.app" -> split -> ["zara", "sabisell", "vercel", "app"] -> [0] is "zara"
+    const storeLink = hostname.split('.')[0];
 
     const fetchStore = async () => {
       try {
