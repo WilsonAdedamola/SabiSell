@@ -412,10 +412,10 @@ import { Link } from "react-router-dom";
 import { 
   ShoppingBag, Search, Plus, Minus, Copy,
   MapPin, Loader2, ChevronRight, 
-  Phone, Mail, MessageCircle, ShieldCheck, Lock, CheckCircle2
-} from "lucide-react";
+  Phone, Mail, MessageCircle, ShieldCheck, Lock, CheckCircle2,
+  } from "lucide-react";
 import api from '../../utils/api'; 
-import { useCart } from '../../context/CartContext'; // Import our Cart Context!
+import { useCart } from '../../context/CartContext'; 
 
 const Storefront = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -426,7 +426,6 @@ const Storefront = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const [copied, setCopied] = useState(false);
 
-  // Pull cart logic from Context
   const { cart, addToCart, updateQuantity, cartTotalItems, cartTotalPrice } = useCart();
 
   // --- FETCH STORE & PRODUCTS BASED ON SUBDOMAIN ---
@@ -461,14 +460,12 @@ const Storefront = () => {
   }, []);
 
   const handleCopyLink = () => {
-    // Generate the full URL dynamically based on the current domain
     navigator.clipboard.writeText(window.location.origin);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   // --- FILTERING ---
-  // Build category list dynamically from store data
   const categoriesList = ["All", ...(store?.categories?.map(c => c.name) || [])];
   
   const filteredProducts = store?.products?.filter(p => {
@@ -480,7 +477,7 @@ const Storefront = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
         <p className="text-sm font-bold text-gray-500">Loading store...</p>
       </div>
     );
@@ -497,22 +494,22 @@ const Storefront = () => {
   }
 
   // --- DYNAMIC STYLING ---
-  const themeStyle = { backgroundColor: store.themeColor };
-  const textThemeStyle = { color: store.themeColor };
+  const themeStyle = { backgroundColor: store.themeColor || "#044e3b" };
+  const textThemeStyle = { color: store.themeColor || "#044e3b" };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       
       {/* 1. HEADER */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        {/* Top Info Bar (Hidden on Mobile) */}
+        {/* Top Info Bar */}
         <div className="hidden lg:block bg-[#f8fafc] border-b border-gray-100 text-gray-500 py-2 text-xs font-medium">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
              <div className="flex items-center gap-6">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Verified SabiSell Business</span>
                 <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-emerald-600" /> Secure Payments</span>
              </div>
-             {store.businessAddress && (
+             {store.businessAddress && store.showBusinessDetails && (
                <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {store.businessAddress}</span>
                </div>
@@ -523,18 +520,17 @@ const Storefront = () => {
         {/* Main Header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
           
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Link to="/" className="flex items-center gap-3 shrink-0">
             {store.logoUrl ? (
-              <img src={store.logoUrl} alt="Logo" className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl object-cover shadow-sm border border-gray-100" />
+              <img src={store.logoUrl} alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover shadow-sm border border-gray-100" />
             ) : (
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl text-white flex items-center justify-center font-extrabold text-sm sm:text-xl shadow-inner" style={themeStyle}>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-white flex items-center justify-center font-extrabold text-sm sm:text-lg shadow-inner" style={themeStyle}>
                 {store.storeName.substring(0, 2).toUpperCase()}
               </div>
             )}
-            {/* Store Name visible on mobile now */}
-            <div className="block">
-              <h1 className="font-extrabold text-gray-900 text-base sm:text-lg leading-tight tracking-tight truncate max-w-[140px] sm:max-w-xs">{store.storeName}</h1>
-              <p className="hidden sm:block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Official Store</p>
+            <div className="flex flex-col justify-center">
+              <h1 className="font-extrabold text-gray-900 text-base sm:text-lg leading-tight tracking-tight truncate max-w-[160px] sm:max-w-xs">{store.storeName}</h1>
+              <p className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider">Official Store</p>
             </div>
           </Link>
 
@@ -546,11 +542,11 @@ const Storefront = () => {
               </div>
               <input 
                 type="text" 
-                placeholder="Search for products..." 
+                placeholder="Search for products, categories..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-gray-100 border-transparent rounded-full focus:bg-white focus:outline-none transition-all text-sm font-medium"
-                style={{ outlineColor: store.themeColor }}
+                className="w-full pl-11 pr-4 py-2.5 bg-gray-100 border-transparent rounded-full focus:bg-white focus:ring-2 transition-all text-sm font-medium"
+                style={{ '--tw-ring-color': store.themeColor }}
               />
             </div>
           </div>
@@ -562,7 +558,7 @@ const Storefront = () => {
             </button>
             <Link to="/cart" className="relative p-2 flex items-center gap-2 group">
               <div className="relative">
-                <ShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 text-gray-800 transition-colors" style={{ hover: textThemeStyle }} />
+                <ShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 text-gray-800 transition-colors" />
                 {cartTotalItems > 0 && (
                   <span 
                     className="absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm"
@@ -584,35 +580,31 @@ const Storefront = () => {
       </header>
 
       {/* 2. PROMO HERO BANNER */}
-      {store.hasBanner && store.bannerImage && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 w-full animate-in fade-in duration-500">
-           <div className="w-full h-48 sm:h-64 lg:h-80 rounded-3xl overflow-hidden relative shadow-md flex items-center" style={themeStyle}>
-              {/* Banner Background Image */}
-              <img 
-                 src={store.bannerImage} 
-                 alt="Promo Background" 
-                 className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
-              />
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              
-              <div className="relative z-10 px-6 sm:px-12 text-white w-full lg:w-2/3">
-                 {store.bannerSubtitle && (
-                   <div className="inline-block px-3 py-1 bg-black/20 backdrop-blur-md text-white text-xs font-bold border border-white/10 rounded-lg mb-4 uppercase tracking-wider">
-                      {store.bannerSubtitle}
-                   </div>
-                 )}
-                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-3 drop-shadow-md">
-                    {store.bannerTitle || "Welcome to Our Store"}
-                 </h2>
-                 {store.bannerDiscount && (
-                   <div className="inline-block px-4 py-1.5 bg-yellow-400 text-yellow-900 text-sm font-extrabold rounded-xl mt-2 shadow-sm">
-                      {store.bannerDiscount}
-                   </div>
-                 )}
-              </div>
-           </div>
-        </section>
-      )}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 w-full animate-in fade-in duration-500">
+         <div className="w-full h-40 sm:h-56 lg:h-72 rounded-3xl overflow-hidden relative shadow-md flex items-center" style={themeStyle}>
+            {/* Background Image: Falls back to a generic stylish image if the vendor has no custom banner */}
+            <img 
+               src={store.bannerImage || "https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=1200&q=80"} 
+               alt="Promo Background" 
+               className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
+            />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            
+            <div className="relative z-10 px-6 sm:px-12 text-white w-full lg:w-1/2">
+               <div className="inline-block px-3 py-1 bg-black/20 backdrop-blur-md text-white text-xs font-bold border border-white/10 rounded-lg mb-4 uppercase tracking-wider">
+                  {store.bannerSubtitle || "Fresh Styles Just for You"}
+               </div>
+               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-2 drop-shadow-md">
+                  {store.bannerTitle || "New Arrivals"} <br className="hidden sm:block" /> {store.bannerTitle ? "" : "Now Available"}
+               </h2>
+               {(store.bannerDiscount || !store.hasBanner) && (
+                 <div className="inline-block px-4 py-1.5 bg-yellow-400 text-yellow-900 text-sm font-extrabold rounded-xl mt-2 shadow-sm uppercase tracking-wider">
+                    {store.bannerDiscount || "SHOP THE LATEST"}
+                 </div>
+               )}
+            </div>
+         </div>
+      </section>
 
       {/* 3. MAIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
@@ -648,42 +640,39 @@ const Storefront = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => {
-              // Pull dynamic cart quantity from Context
               const cartItem = cart.find(i => i.id === product.id);
               const qty = cartItem ? cartItem.cartQuantity : 0;
               const isOutOfStock = product.stockQuantity === 0;
 
               return (
-                <div key={product.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col group">
+                <div key={product.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 active:scale-[0.98] transition-all duration-300 flex flex-col group p-1.5 sm:p-2">
                   
-                  {/* Product Image Area */}
-                  <Link to={`/product/${product.id}`} className="block relative aspect-[4/5] bg-[#f8fafc] overflow-hidden p-2">
+                  {/* Product Image Area - bg-gray-50/50 and mix-blend-multiply removes the harsh white squares! */}
+                  <Link to={`/product/${product.id}`} className="block relative aspect-[4/5] bg-gray-50/50 rounded-2xl overflow-hidden flex items-center justify-center">
                     {product.imageUrls?.[0] ? (
                       <img 
                         src={product.imageUrls[0]} 
                         alt={product.name} 
-                        className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-700 ease-in-out" 
+                        className="w-full h-full object-cover mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-in-out" 
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100 rounded-2xl">
-                        <ShoppingBag className="w-8 h-8" />
-                      </div>
+                      <ShoppingBag className="w-8 h-8 text-gray-300" />
                     )}
                     
                     {/* Stock Badges */}
                     {isOutOfStock ? (
-                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl m-2">
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl">
                         <span className="bg-gray-900 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm">Sold Out</span>
                       </div>
                     ) : product.stockQuantity <= 5 ? (
-                       <span className="absolute bottom-4 right-4 bg-orange-100 text-orange-800 text-[10px] font-extrabold px-2.5 py-1 rounded-md border border-orange-200 shadow-sm">
+                       <span className="absolute bottom-3 right-3 bg-orange-100 text-orange-800 text-[10px] font-extrabold px-2.5 py-1 rounded-md border border-orange-200 shadow-sm">
                           Only {product.stockQuantity} Left
                        </span>
                     ) : null}
                   </Link>
                   
                   {/* Product Details */}
-                  <div className="p-4 sm:p-5 flex flex-col grow">
+                  <div className="p-3 sm:p-4 flex flex-col grow">
                     <Link to={`/product/${product.id}`}>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{product.category !== "General Product" ? product.category : "Product"}</span>
                       <h4 className="text-sm sm:text-base font-bold text-gray-900 leading-tight mb-2 group-hover:text-gray-600 transition-colors line-clamp-2">
@@ -691,9 +680,9 @@ const Storefront = () => {
                       </h4>
                     </Link>
                     
-                    <div className="flex items-center justify-between mb-5 mt-auto">
+                    <div className="flex items-center justify-between mb-4 mt-auto">
                        <div className="flex flex-col">
-                         <p className="font-extrabold text-gray-900 text-lg" style={textThemeStyle}>
+                         <p className="font-extrabold text-gray-900 text-base sm:text-lg" style={textThemeStyle}>
                            ₦{Number(product.price).toLocaleString()}
                          </p>
                          {product.compareAtPrice && (
@@ -717,7 +706,7 @@ const Storefront = () => {
                           disabled={isOutOfStock}
                           style={isOutOfStock ? {} : themeStyle}
                           className={`w-full py-2.5 sm:py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                            isOutOfStock ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "text-white shadow-md hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5"
+                            isOutOfStock ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "text-white shadow-md hover:opacity-90"
                           }`}
                         >
                           <ShoppingBag className="w-4 h-4" /> Add to Cart
@@ -733,7 +722,7 @@ const Storefront = () => {
                             disabled={qty >= product.stockQuantity}
                             style={qty >= product.stockQuantity ? {} : themeStyle}
                             className={`w-10 h-10 flex items-center justify-center rounded-lg shadow-sm transition-colors ${
-                              qty >= product.stockQuantity ? "bg-gray-200 text-gray-400" : "text-white hover:opacity-90"
+                              qty >= product.stockQuantity ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "text-white hover:opacity-90"
                             }`}
                           >
                             <Plus className="w-4 h-4" />
@@ -776,7 +765,7 @@ const Storefront = () => {
                  
                  <div className="grid grid-cols-2 gap-3 mb-4">
                     {store.whatsapp && (
-                      <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition-colors text-sm font-bold">
+                      <a href={`https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition-colors text-sm font-bold">
                          <MessageCircle className="w-4 h-4" /> WhatsApp
                       </a>
                     )}
@@ -834,10 +823,10 @@ const Storefront = () => {
               <div className="md:col-span-3 lg:col-span-4">
                  <h4 className="font-bold text-gray-900 mb-6">Quick Links</h4>
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    <li><Link to="/" className="transition-colors flex items-center gap-2" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Home</Link></li>
-                    <li><Link to="/cart" className="transition-colors flex items-center gap-2" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
-                    <li><a href="#" className="transition-colors flex items-center gap-2" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Return Policy</a></li>
-                    <li><a href="#" className="transition-colors flex items-center gap-2" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Delivery Information</a></li>
+                    <li><Link to="/" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Home</Link></li>
+                    <li><Link to="/cart" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
+                    <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Return Policy</a></li>
+                    <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Delivery Information</a></li>
                  </ul>
                  
                  {/* Extra Socials */}
