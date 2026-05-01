@@ -8,7 +8,7 @@ import {
   CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
-import ConfirmModal from "../components/shared/ConfirmModal"; // <-- Make sure this path is correct!
+import ConfirmModal from "../components/shared/ConfirmModal"; 
 
 const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,7 +26,8 @@ const VendorLayout = () => {
     storeName: null,
     storeType: null,
     logoUrl: null,
-    isOnline: false
+    isOnline: false,
+    storeLink: null
   });
 
   useEffect(() => {
@@ -46,10 +47,16 @@ const VendorLayout = () => {
   const displayName = hasStore ? vendorData.storeName : vendorData.name;
   const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
 
+  // --- DYNAMIC STORE URL ---
+  // Generates http://storelink.localhost:5173 or https://storelink.sabisell.com
+  const storeUrl = vendorData?.storeLink 
+    ? `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}` 
+    : "/dashboard/settings"; // Fallback to settings if no store link is set
+
   // --- LOGOUT LOGIC ---
   const handleLogoutClick = () => {
-    setIsMobileMenuOpen(false); // Close mobile menu if it's open
-    setIsLogoutModalOpen(true); // Open the modal
+    setIsMobileMenuOpen(false); 
+    setIsLogoutModalOpen(true); 
   };
 
   const confirmLogout = () => {
@@ -61,7 +68,8 @@ const VendorLayout = () => {
   // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [
-      { name: "My Store", icon: Store, path: "/your-store" },
+      // NEW: Added external flag and dynamic storeUrl
+      { name: "My Store", icon: Store, path: storeUrl, external: !!vendorData?.storeLink },
       { name: "Products", icon: Package, path: "/dashboard/products", badge: "12" },
       { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: "36", badgeColor: "bg-emerald-100 text-emerald-800" },
       { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
@@ -138,17 +146,13 @@ const VendorLayout = () => {
             )}
             <div className="space-y-1.5">
               {group.items.map((item, itemIdx) => {
-                const isActive = location.pathname.includes(item.path);
-                return (
-                  <Link 
-                    key={itemIdx} 
-                    to={item.path} 
-                    title={collapsed ? item.name : ""}
-                    className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between px-4'} py-3 rounded-xl font-semibold transition-all ${
-                      isActive ? "bg-emerald-50 text-sabi-primary" : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
+                const isActive = !item.external && location.pathname.includes(item.path);
+                const linkClasses = `flex items-center ${collapsed ? 'justify-center' : 'justify-between px-4'} py-3 rounded-xl font-semibold transition-all ${
+                  isActive ? "bg-emerald-50 text-sabi-primary" : "text-gray-700 hover:bg-gray-50"
+                }`;
+
+                const content = (
+                  <>
                     <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
                       <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-sabi-primary" : "text-gray-400"}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
@@ -158,6 +162,31 @@ const VendorLayout = () => {
                         {item.badge}
                       </span>
                     )}
+                  </>
+                );
+
+                // NEW: If external, render an <a> tag. Otherwise, standard React Router <Link>
+                return item.external ? (
+                  <a
+                    key={itemIdx}
+                    href={item.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={collapsed ? item.name : ""}
+                    className={linkClasses}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <Link 
+                    key={itemIdx} 
+                    to={item.path} 
+                    title={collapsed ? item.name : ""}
+                    className={linkClasses}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {content}
                   </Link>
                 );
               })}
@@ -259,9 +288,12 @@ const VendorLayout = () => {
             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
               <HelpCircle className="w-4 h-4 text-sabi-primary" /> Help & Support
             </button>
-            <a href="#" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
+            
+            {/* NEW: Updated Top Header External Link */}
+            <a href={storeUrl} target={vendorData?.storeLink ? "_blank" : "_self"} rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
               <ExternalLink className="w-4 h-4 text-sabi-primary" /> View Store
             </a>
+            
             <div className="w-px h-8 bg-gray-200 mx-2"></div>
             <button className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors">
               <Bell className="w-6 h-6" />
