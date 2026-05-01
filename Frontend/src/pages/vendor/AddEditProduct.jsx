@@ -16,7 +16,7 @@ const AddEditProduct = () => {
   
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(isEditMode); 
+  const [isFetching, setIsFetching] = useState(true); 
   const [error, setError] = useState("");
 
   // --- PLAN & LIMIT LOGIC ---
@@ -24,9 +24,10 @@ const AddEditProduct = () => {
   const currentPlan = vendor.plan || "FREE";
   const maxImages = currentPlan === "GROWTH" ? 5 : currentPlan === "STARTER" ? 3 : 1;
 
+  // Form State
   const [formData, setFormData] = useState({
     name: "",
-    category: "Fashion & Clothing",
+    category: "", // Remains empty if no category is selected
     description: "",
     price: "",
     compareAtPrice: "",
@@ -34,23 +35,36 @@ const AddEditProduct = () => {
   });
   
   const [isToggled, setIsToggled] = useState(true); 
+  const [categories, setCategories] = useState([]);
 
   // Image Handling
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]); 
 
-  // --- FETCH EXISTING PRODUCT IF IN EDIT MODE ---
+  // --- FETCH DATA ---
   useEffect(() => {
-    if (isEditMode) {
-      const fetchProductData = async () => {
+    const fetchData = async () => {
+      try {
+        // 1. Fetch Categories first
+        let fetchedCategories = [];
         try {
+          const catRes = await api.get('/categories');
+          fetchedCategories = catRes.data.categories || [];
+          setCategories(fetchedCategories);
+        } catch (e) {
+          fetchedCategories = [];
+          setCategories(fetchedCategories);
+        }
+
+        // 2. Fetch Product if in Edit Mode
+        if (isEditMode) {
           const response = await api.get(`/products/${id}`);
           const product = response.data.product;
 
           setFormData({
             name: product.name || "",
-            category: product.category || "Fashion & Clothing",
+            category: product.category || "", 
             description: product.description || "",
             price: product.price ? product.price.toString() : "",
             compareAtPrice: product.compareAtPrice ? product.compareAtPrice.toString() : "",
@@ -63,16 +77,15 @@ const AddEditProduct = () => {
             setImagePreviews(product.imageUrls);
             setExistingImages(product.imageUrls); 
           }
-
-        } catch (err) {
-          setError("Failed to load product details.");
-        } finally {
-          setIsFetching(false);
         }
-      };
+      } catch (err) {
+        setError("Failed to load data. Please refresh.");
+      } finally {
+        setIsFetching(false);
+      }
+    };
 
-      fetchProductData();
-    }
+    fetchData();
   }, [id, isEditMode]);
 
   // --- HANDLERS ---
@@ -84,7 +97,6 @@ const AddEditProduct = () => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     
-    // Enforce dynamic limit based on plan
     if (imagePreviews.length + files.length > maxImages) {
       setError(`Your ${currentPlan} plan allows a maximum of ${maxImages} images per product.`);
       return;
@@ -122,6 +134,7 @@ const AddEditProduct = () => {
     if (step === 1) {
       if (!formData.name.trim()) return setError("Product name is required.");
       if (imagePreviews.length === 0) return setError("Please have at least one product image.");
+      // Category is entirely optional now, no validation here
     }
     if (step === 2) {
       if (!formData.price || parseFloat(formData.price) <= 0) return setError("Please enter a valid price.");
@@ -144,10 +157,14 @@ const AddEditProduct = () => {
     try {
       const dataToSend = new FormData();
       dataToSend.append("name", formData.name);
-      dataToSend.append("category", formData.category);
+      
+      // If no category selected, send empty string
+      dataToSend.append("category", formData.category || "");
+      
       dataToSend.append("description", formData.description);
       dataToSend.append("price", formData.price || "0");
       dataToSend.append("stockQuantity", formData.stockQuantity || "0");
+      
       dataToSend.append("status", (forceDraft || !isToggled) ? "DRAFT" : "ACTIVE");
       
       if (formData.compareAtPrice) {
@@ -202,12 +219,13 @@ const AddEditProduct = () => {
               {isEditMode ? "Edit Product" : "Add Product"}
             </h1>
           </div>
+          
           <button 
             onClick={() => handlePublish(true)} 
             disabled={isLoading}
-            className="text-sm font-bold text-sabi-primary hover:text-sabi-primaryDark transition-colors disabled:opacity-50"
+            className="text-sm font-bold text-sabi-primary hover:text-sabi-primaryDark transition-colors disabled:opacity-50 flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl"
           >
-            {isLoading ? "Saving..." : "Save Draft"}
+            {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : "Save to Draft"}
           </button>
         </div>
 
@@ -299,7 +317,7 @@ const AddEditProduct = () => {
                   )}
                 </div>
 
-                {/* UPSELL BANNER: Show if they hit the limit but aren't on Growth */}
+                {/* UPSELL BANNER */}
                 {imagePreviews.length >= maxImages && currentPlan !== "GROWTH" && (
                   <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center gap-3">
@@ -316,7 +334,6 @@ const AddEditProduct = () => {
                     </Link>
                   </div>
                 )}
-
               </div>
 
               {/* Product Name */}
@@ -339,9 +356,9 @@ const AddEditProduct = () => {
                 </div>
               </div>
 
-              {/* Category */}
+              {/* DYNAMIC CATEGORY DROPDOWN */}
               <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-900 mb-2">Category <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Category <span className="text-gray-400 font-medium">(Optional)</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Tag className="w-5 h-5 text-sabi-primary" />
@@ -350,19 +367,27 @@ const AddEditProduct = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary transition-all font-bold text-gray-900 appearance-none"
+                    disabled={categories.length === 0}
+                    className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary transition-all font-bold text-gray-900 appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <option>Fashion & Clothing</option>
-                    <option>Electronics & Gadgets</option>
-                    <option>Health & Beauty</option>
-                    <option>Food & Groceries</option>
-                    <option>Home & Furniture</option>
-                    <option>Services & Others</option>
+                    <option value="">None (Optional)</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                     <ChevronDown className="w-5 h-5 text-gray-400" />
                   </div>
                 </div>
+                
+                {/* Red Text Warning / Prompt for Categories */}
+                {categories.length === 0 && (
+                  <p className="text-xs font-medium text-red-500 mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    You haven't created any categories yet. 
+                    <Link to="/dashboard/products" className="underline font-bold hover:text-red-700 ml-1">Go to Products tab to create one.</Link>
+                  </p>
+                )}
               </div>
 
               {/* Description */}
@@ -458,7 +483,6 @@ const AddEditProduct = () => {
                     <p className="text-xs font-medium text-gray-500">{isToggled ? "Active and visible in store" : "Saved as draft, hidden from store"}</p>
                   </div>
                 </div>
-                {/* Custom Toggle */}
                 <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${isToggled ? 'bg-sabi-primary' : 'bg-gray-300'}`}>
                   <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${isToggled ? 'translate-x-6' : 'translate-x-0'}`}></div>
                 </div>
@@ -477,22 +501,48 @@ const AddEditProduct = () => {
 
           {/* STEP 3: REVIEW */}
           {step === 3 && (
-            <div className="animate-in slide-in-from-right-4 duration-300 text-center py-6">
+            <div className="animate-in slide-in-from-right-4 duration-300 text-center py-2">
               
-              <div className="w-32 h-32 mx-auto mb-6 relative rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gray-50 flex items-center justify-center">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 relative rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gray-50 flex items-center justify-center">
                  {imagePreviews.length > 0 ? (
                    <img src={imagePreviews[0]} alt="Product preview" className="w-full h-full object-cover" />
                  ) : (
-                   <ImageIcon className="w-10 h-10 text-gray-300" />
+                   <ImageIcon className="w-8 h-8 text-gray-300" />
                  )}
               </div>
 
-              <h3 className="text-2xl font-extrabold text-gray-900 mb-2">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-2">
                 {isEditMode ? "Ready to Update" : "Ready to Publish"}
               </h3>
-              <p className="text-gray-500 text-sm mb-8 max-w-sm mx-auto">
-                Your product <strong>"{formData.name}"</strong> looks great and is ready to be {isEditMode ? "updated in" : "added to"} your inventory.
+              <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+                Review your product details before {isEditMode ? "updating" : "publishing"}.
               </p>
+
+              {/* PRODUCT SUMMARY CARD */}
+              <div className="bg-gray-50 rounded-2xl p-4 sm:p-5 text-left space-y-3 mb-8 w-full max-w-sm mx-auto border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Name</span> 
+                  <span className="text-sm font-bold text-gray-900 truncate pl-4">{formData.name}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Category</span> 
+                  <span className="text-sm font-bold text-gray-900">{formData.category || "None"}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Price</span> 
+                  <span className="text-sm font-extrabold text-sabi-primary">₦{Number(formData.price).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Stock</span> 
+                  <span className="text-sm font-bold text-gray-900">{formData.stockQuantity} Units</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Status</span> 
+                  <span className={`text-[11px] px-2 py-0.5 rounded uppercase font-extrabold ${isToggled ? "bg-emerald-100 text-emerald-800" : "bg-purple-100 text-purple-800"}`}>
+                    {isToggled ? "Active" : "Draft"}
+                  </span>
+                </div>
+              </div>
               
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} disabled={isLoading} className="w-1/3 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold transition-all hover:bg-gray-50 disabled:opacity-50">

@@ -14,7 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/adapter-pg": "^7.7.0",
-    "@prisma/client": "^7.7.0",
+    "@prisma/client": "^6.19.3",
     "@prisma/config": "^7.7.0",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
@@ -30,6 +30,6 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "prisma": "^7.7.0"
+    "prisma": "^6.19.3"
   }
 }
