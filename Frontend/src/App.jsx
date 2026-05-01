@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // 1. LAYOUTS
 import VendorLayout from './layouts/VendorLayout';
@@ -37,20 +37,22 @@ import OrderSuccess from './pages/store/OrderSuccess';
 // 6. SYSTEM PAGES
 import NotFound from './pages/errors/NotFound';
 
-// --- ROUTER CONFIGURATION ---
-const router = createBrowserRouter([
-  // SYSTEM 1: MARKETING WEBSITE
+// ==========================================
+// ROUTER 1: MAIN SAAS APP (sabisell.com)
+// ==========================================
+const mainRouter = createBrowserRouter([
+  // MARKETING WEBSITE
   { path: "/", element: <Landing /> },
   { path: "/pricing", element: <Pricing /> },
   { path: "/faq", element: <FAQ /> },
 
-  // SYSTEM 2: AUTHENTICATION FLOW
-      { path: "/login", element: <Login /> },
-      { path: "/register", element: <Register /> },
-      { path: "/forgot-password", element: <ForgotPassword /> },
-      { path: "/verify-email", element: <VerifyEmail /> },
+  // AUTHENTICATION FLOW
+  { path: "/login", element: <Login /> },
+  { path: "/register", element: <Register /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/verify-email", element: <VerifyEmail /> },
 
-  // SYSTEM 3: VENDOR APP (sabisell.com/dashboard)
+  // VENDOR APP
   {
     path: "/dashboard",
     element: <VendorLayout />,
@@ -69,9 +71,17 @@ const router = createBrowserRouter([
     ],
   },
 
-  // SYSTEM 4: CUSTOMER STOREFRONT (sabisell.com/zara-stitches)
+  // CATCH-ALL 404
+  { path: "*", element: <NotFound /> }
+]);
+
+// ==========================================
+// ROUTER 2: STOREFRONT APP (store.sabisell.com)
+// ==========================================
+const storeRouter = createBrowserRouter([
   {
-    path: "/:storeSlug",
+    // Notice how the path is just "/", because the store slug is now in the domain!
+    path: "/",
     element: <StoreLayout />,
     children: [
       { index: true, element: <Storefront /> },
@@ -81,16 +91,32 @@ const router = createBrowserRouter([
       { path: "success", element: <OrderSuccess /> },
     ],
   },
-
-  // SYSTEM 5: CATCH-ALL 404
-  {
-    path: "*",
-    element: <NotFound />
-  }
+  // CATCH-ALL 404 FOR STORES
+  { path: "*", element: <NotFound /> }
 ]);
 
+
+// ==========================================
+// ROOT COMPONENT: DOMAIN ROUTING LOGIC
+// ==========================================
 const App = () => {
-  return <RouterProvider router={router} />;
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  
+  let isSubdomain = false;
+
+  // Check if we are on a production subdomain (e.g., zara.sabisell.com)
+  if (parts.length >= 3 && parts[0] !== 'www') {
+    isSubdomain = true;
+  } 
+  // Check if we are on a local testing subdomain (e.g., zara.localhost)
+  else if (hostname.includes('localhost') && parts.length === 2) {
+    isSubdomain = true;
+  }
+
+  // If a valid subdomain is detected, hijack the app and serve the Store Router.
+  // Otherwise, serve the Main SaaS Router.
+  return <RouterProvider router={isSubdomain ? storeRouter : mainRouter} />;
 };
 
 export default App;

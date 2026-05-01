@@ -18,6 +18,7 @@ const productRoutes = require('./routes/product.routes');
 const subscriptionRoutes = require('./routes/subscription.routes');
 const orderRoutes = require('./routes/order.routes');
 const storefrontRoutes = require('./routes/storefront.routes');
+const categoryRoutes = require('./routes/category.routes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -26,6 +27,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/storefront', storefrontRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // A simple test route
 app.get('/api/health', (req, res) => {

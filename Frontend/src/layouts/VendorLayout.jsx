@@ -61,7 +61,7 @@ const VendorLayout = () => {
   // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [
-      { name: "My Store", icon: Store, path: "/dashboard/store" },
+      { name: "My Store", icon: Store, path: "/your-store" },
       { name: "Products", icon: Package, path: "/dashboard/products", badge: "12" },
       { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: "36", badgeColor: "bg-emerald-100 text-emerald-800" },
       { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
