@@ -55,24 +55,18 @@ const VendorLayout = () => {
   useEffect(() => {
     const fetchSidebarStats = async () => {
       try {
-        // Try hitting your dashboard stats endpoint first
-        const res = await api.get('/dashboard/stats');
+        // Fetch products and orders simultaneously using endpoints we know exist
+        const [prodRes, ordRes] = await Promise.all([
+          api.get('/products').catch(() => ({ data: { products: [] } })), // Catch individual errors so one doesn't break the other
+          api.get('/orders').catch(() => ({ data: { orders: [] } }))
+        ]);
+        
         setStats({
-          products: res.data.totalProducts || 0,
-          orders: res.data.totalOrders || 0
+          products: prodRes.data.products?.length || 0,
+          orders: ordRes.data.orders?.length || 0
         });
       } catch (error) {
-        // Fallback: If that endpoint doesn't exist yet, just fetch the lists directly to get the lengths
-        try {
-          const prodRes = await api.get('/products');
-          const ordRes = await api.get('/orders');
-          setStats({
-            products: prodRes.data.products?.length || 0,
-            orders: ordRes.data.orders?.length || 0
-          });
-        } catch (e) {
-          console.error("Failed to load sidebar badge stats");
-        }
+        console.error("Failed to load sidebar badge stats:", error);
       }
     };
 
