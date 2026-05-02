@@ -16,15 +16,30 @@ exports.getStoreByLink = async (req, res) => {
         storeDescription: true,
         logoUrl: true,
         themeColor: true,
+        
+        // --- Hero Banner ---
         hasBanner: true,
         bannerImage: true,
         bannerTitle: true,
         bannerSubtitle: true,
         bannerDiscount: true,
+        
+        // --- NEW: Premium Features ---
+        plan: true,
+        enableSlideshow: true,
+        slideshowImages: true,
+        enableSecondaryBanner: true,
+        secondaryBannerTitle: true,
+        secondaryBannerDesc: true,
+        secondaryBannerImage: true,
+
+        // --- Contact & Business ---
         whatsapp: true,
         instagram: true,
         facebook: true,
         twitter: true,
+        tiktok: true,
+        snapchat: true,
         phone: true,
         email: true,
         businessName: true,
@@ -33,11 +48,13 @@ exports.getStoreByLink = async (req, res) => {
         isOnline: true,
         deliveryFee: true,
         deliveryTime: true,
+        
         // Only fetch ACTIVE products
         products: {
           where: { status: "ACTIVE" },
           orderBy: { createdAt: 'desc' }
         },
+        
         // Fetch store categories
         categories: true 
       }

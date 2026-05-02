@@ -11,6 +11,7 @@ import TT from '../../assets/social icons/tiktok.svg';
 import X from '../../assets/social icons/x.svg';
 import api from '../../utils/api'; 
 import { useCart } from '../../context/CartContext'; 
+import { StoreFrontSkeleton } from "../../components/shared/Skeletons";
 
 const Storefront = () => {
   const { fallbackStoreLink } = useParams(); 
@@ -23,11 +24,7 @@ const Storefront = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [copied, setCopied] = useState(false);
-  
-  // Mobile Search Toggle State
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-
-  // Slideshow State
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const { cart, addToCart, updateQuantity, cartTotalItems, cartTotalPrice } = useCart();
@@ -61,13 +58,11 @@ const Storefront = () => {
     fetchStore();
   }, [fallbackStoreLink]); 
 
-  // --- PREMIUM FEATURES LOGIC ---
-  const isPremium = store?.plan === 'starter' || store?.plan === 'growth' || true; 
+  const isPremium = store?.plan === 'starter' || store?.plan === 'growth'; 
+  const isGrowth = store?.plan === 'growth'; 
   
-  // Slideshow Auto-play
   useEffect(() => {
     if (!isPremium || !store?.enableSlideshow || !store?.slideshowImages?.length) return;
-    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % store.slideshowImages.length);
     }, 5000);
@@ -80,7 +75,6 @@ const Storefront = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- FILTERING ---
   const categoriesList = ["All", ...(store?.categories?.map(c => c.name) || [])];
   
   const filteredProducts = store?.products?.filter(p => {
@@ -92,10 +86,7 @@ const Storefront = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
-        <p className="text-sm font-bold text-gray-500">Loading store...</p>
-      </div>
+      <StoreFrontSkeleton />
     );
   }
 
@@ -208,60 +199,60 @@ const Storefront = () => {
         </div>
       </header>
 
-      {/* 2. HERO SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-8 mt-6 mb-12 w-full">
-        <div className="w-full h-[60vh] sm:h-[70vh] rounded-[2rem] overflow-hidden relative bg-[#EFEFE9] flex items-center shadow-sm">
-          
-          {isPremium && store.enableSlideshow && store.slideshowImages?.length > 0 ? (
-            <>
-              {store.slideshowImages.map((imgUrl, index) => (
-                <img 
-                  key={index}
-                  src={imgUrl} 
-                  alt={`Slide ${index + 1}`} 
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
-                />
-              ))}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
-                {store.slideshowImages.map((_, index) => (
-                  <button 
-                    key={index} 
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${index === currentSlide ? "w-5" : "bg-white/50"}`}
-                    style={index === currentSlide ? themeStyle : {}}
+      {/* 2. HERO SECTION (Now conditionally rendered based on store.hasBanner) */}
+      {store.hasBanner && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-8 mt-6 mb-12 w-full">
+          <div className="w-full h-[60vh] sm:h-[70vh] rounded-[2rem] overflow-hidden relative bg-[#EFEFE9] flex items-center shadow-sm">
+            
+            {isPremium && store.enableSlideshow && store.slideshowImages?.length > 0 ? (
+              <>
+                {store.slideshowImages.map((imgUrl, index) => (
+                  <img 
+                    key={index}
+                    src={imgUrl} 
+                    alt={`Slide ${index + 1}`} 
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
                   />
                 ))}
-              </div>
-            </>
-          ) : (
-            <img 
-               src={store.bannerImage || "https://images.unsplash.com/photo-1600607686527-6fb886090705?w=1200&q=80"} 
-               alt="Hero Banner" 
-               className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+                  {store.slideshowImages.map((_, index) => (
+                    <button 
+                      key={index} 
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${index === currentSlide ? "w-5" : "bg-white/50"}`}
+                      style={index === currentSlide ? themeStyle : {}}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <img 
+                 src={store.bannerImage || "https://images.unsplash.com/photo-1600607686527-6fb886090705?w=1200&q=80"} 
+                 alt="Hero Banner" 
+                 className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
 
-          <div className="absolute inset-0 bg-black/20 mix-blend-multiply"></div>
+            <div className="absolute inset-0 bg-black/30 mix-blend-multiply"></div>
 
-          <div className="relative z-10 px-8 sm:px-16 w-full lg:w-1/2">
-             <p className="text-[10px] sm:text-[11px] lg:text-sm font-bold uppercase tracking-[0.15em] mb-4 text-white drop-shadow-md">
-               {/* {!store.bannerSubtitle ? "Welcome to Our Store" : store.bannerSubtitle} */}
-               {store.bannerSubtitle ? "Welcome to Our Store" : store.bannerSubtitle}
-             </p>
-             {/* Note the whitespace-pre-line class which enables the \n rendering natively! */}
-             <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal leading-[1.1] mb-8 text-white drop-shadow-lg whitespace-pre-line">
-               {store.bannerTitle ? "Discover Quality & Excellence.\nCurated just for you." : store.bannerTitle}
-              
-                {/* {store.bannerTitle || "Discover Quality & Excellence.\nCurated just for you."} */}
-             </h2>
-             <div className="flex gap-4">
-                <a href="#products" className="px-8 py-3.5 text-white text-sm font-semibold rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={themeStyle}>
-                  Shop Now
-                </a>
-             </div>
+            <div className="relative z-10 px-8 sm:px-16 w-full lg:w-1/2">
+               <p className="text-[10px] sm:text-[11px] lg:text-sm font-bold uppercase tracking-[0.15em] mb-4 text-white drop-shadow-md">
+                 {/* Guarding against the literal string "null" */}
+                 {store.bannerSubtitle && store.bannerSubtitle !== "null" ? store.bannerSubtitle : "Welcome to Our Store"}
+               </p>
+               <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal leading-[1.1] mb-8 text-white drop-shadow-lg whitespace-pre-line">
+                 {/* Guarding against the literal string "null" */}
+                 {store.bannerTitle && store.bannerTitle !== "null" ? store.bannerTitle : "Discover Quality & Excellence.\nCurated just for you."}
+               </h2>
+               <div className="flex gap-4">
+                  <a href="#products" className="px-8 py-3.5 text-white text-sm font-semibold rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={themeStyle}>
+                    {store.bannerDiscount && store.bannerDiscount !== "null" ? store.bannerDiscount : "Shop Now"}
+                  </a>
+               </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-8 w-full">
         
@@ -297,7 +288,7 @@ const Storefront = () => {
         )}
 
         {/* 4. ALL PRODUCTS GRID */}
-        <section id="products" className="mb-16">
+        <section id="products" className="mb-16 mt-8">
            <div className="flex justify-between items-end mb-6">
              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">All Products</h3>
            </div>
@@ -315,7 +306,6 @@ const Storefront = () => {
                 const isOutOfStock = product.stockQuantity === 0;
 
                 return (
-                  // Reverted to clean borders without the extra wrapper padding/scaling
                   <div key={product.id} className="flex flex-col group">
                     <div className="relative aspect-[3/4] bg-[#F5F2ED] rounded-2xl overflow-hidden mb-4">
                       <Link to={`${basePath}/product/${product.id}`} className="block w-full h-full">
@@ -385,16 +375,16 @@ const Storefront = () => {
           )}
         </section>
 
-        {/* 5. SECONDARY PROMO BANNER (Premium Only) */}
-        {isPremium && store.enableSecondaryBanner && (
+        {/* 5. SECONDARY PROMO BANNER */}
+        {isGrowth && store.enableSecondaryBanner && (
           <section className="mb-16 w-full">
             <div className="w-full rounded-3xl overflow-hidden flex flex-col md:flex-row relative shadow-sm" style={themeStyle}>
               <div className="p-8 sm:p-16 flex-1 flex flex-col justify-center text-white z-10">
                 <h2 className="font-serif text-3xl sm:text-5xl font-normal leading-[1.1] mb-4 text-white">
-                  {store.secondaryBannerTitle || "Look Good.\nFeel Unstoppable."}
+                  {store.secondaryBannerTitle && store.secondaryBannerTitle !== "null" ? store.secondaryBannerTitle : "Look Good.\nFeel Unstoppable."}
                 </h2>
                 <p className="text-sm text-white/80 max-w-sm mb-8 leading-relaxed">
-                  {store.secondaryBannerDesc || "Explore premium styles made to make you stand out. Handcrafted with precision and care."}
+                  {store.secondaryBannerDesc && store.secondaryBannerDesc !== "null" ? store.secondaryBannerDesc : "Explore premium styles made to make you stand out. Handcrafted with precision and care."}
                 </p>
                 
                 <ul className="space-y-4 mb-8 hidden sm:block">
@@ -433,7 +423,6 @@ const Storefront = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 mb-12">
               
-              {/* Left Column: Store Branding & Contact Actions */}
               <div className="md:col-span-5 lg:col-span-4">
                  <div className="flex items-center gap-3 mb-4">
                     {store.logoUrl ? (
@@ -450,29 +439,28 @@ const Storefront = () => {
                  </div>
                  
                  <p className="text-gray-500 text-sm leading-relaxed mb-6 pr-4">
-                    {store.storeDescription || "Welcome to our official online store. Shop quality products securely."}
+                    {store.storeDescription && store.storeDescription !== "null" ? store.storeDescription : "Welcome to our official online store. Shop quality products securely."}
                  </p>
                  
                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {store.whatsapp && (
+                    {store.whatsapp && store.whatsapp !== "null" && (
                       <a href={`https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition-colors text-sm font-bold">
                          <MessageCircle className="w-4 h-4" /> WhatsApp
                       </a>
                     )}
-                    {store.phone && (
+                    {store.phone && store.phone !== "null" && (
                       <a href={`tel:${store.phone}`} className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors text-sm font-bold">
                          <Phone className="w-4 h-4" /> Call Us
                       </a>
                     )}
                  </div>
-                 {store.instagram && (
+                 {store.instagram && store.instagram !== "null" && (
                    <a href={`https://www.instagram.com/${store.instagram}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition-colors text-sm font-bold">
                      <img src={IG} alt="instagram" className="w-4 h-4" /> Follow on Instagram
                    </a>
                  )}
               </div>
 
-              {/* Middle Column: Link Copy Box & Trust */}
               <div className="md:col-span-4 lg:col-span-4">
                  <h4 className="font-bold text-gray-900 mb-6">Store Details</h4>
                  
@@ -500,7 +488,7 @@ const Storefront = () => {
                          <span>{store.businessAddress}</span>
                       </li>
                     )}
-                    {store.email && (
+                    {store.email && store.email !== "null" && (
                       <li className="flex items-center gap-3">
                          <Mail className="w-5 h-5 shrink-0" style={textThemeStyle} />
                          <span>{store.email}</span>
@@ -509,7 +497,6 @@ const Storefront = () => {
                  </ul>
               </div>
 
-              {/* Right Column: Quick Links */}
               <div className="md:col-span-3 lg:col-span-4">
                  <h4 className="font-bold text-gray-900 mb-6">Quick Links</h4>
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
@@ -519,17 +506,15 @@ const Storefront = () => {
                     <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Delivery Information</a></li>
                  </ul>
                  
-                 {/* Extra Socials */}
                  <div className="flex gap-3 mt-6">
-                    {store.facebook && <a href={`https://www.facebook.com/${store.facebook}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100"><img src={FB} alt="facebook" className="w-4 h-4" /></a>}
-                    {store.twitter && <a href={`https://twitter.com/${store.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={X} alt="X" className="w-4 h-4" /></a>}
-                     {store.tiktok && <a href={`https://tiktok.com/${store.tiktok}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={TT} alt="TikTok" className="w-4 h-4" /></a>}
-                      {store.snapchat && <a href={`https://snapchat.com/${store.snapchat}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={X} alt="X" className="w-4 h-4" /></a>}
+                    {store.facebook && store.facebook !== "null" && <a href={`https://www.facebook.com/${store.facebook}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100"><img src={FB} alt="facebook" className="w-4 h-4" /></a>}
+                    {store.twitter && store.twitter !== "null" && <a href={`https://twitter.com/${store.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={X} alt="X" className="w-4 h-4" /></a>}
+                    {store.tiktok && store.tiktok !== "null" && <a href={`https://tiktok.com/${store.tiktok}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={TT} alt="TikTok" className="w-4 h-4" /></a>}
+                    {store.snapchat && store.snapchat !== "null" && <a href={`https://snapchat.com/${store.snapchat}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center hover:bg-yellow-200 font-bold text-xs">SC</a>}
                  </div>
               </div>
            </div>
 
-           {/* Bottom Bar with Powered By Badge */}
            <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-gray-500 text-sm font-medium text-center md:text-left">
                  &copy; {new Date().getFullYear()} {store.storeName}. All rights reserved.

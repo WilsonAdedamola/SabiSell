@@ -23,6 +23,8 @@ model Vendor {
   instagram           String?
   facebook            String?
   twitter             String?
+  tiktok              String?
+  snapchat            String?
   
   // Store Details
   storeName           String?
@@ -39,6 +41,16 @@ model Vendor {
   bannerTitle         String?
   bannerSubtitle      String?
   bannerDiscount      String?
+
+  // --- NEW: Slideshow Settings ---
+  enableSlideshow       Boolean   @default(false)
+  slideshowImages       String[]
+
+  // --- NEW: Secondary Banner Settings ---
+  enableSecondaryBanner Boolean   @default(false)
+  secondaryBannerTitle  String?
+  secondaryBannerDesc   String?
+  secondaryBannerImage  String?
 
   // Business Details
   businessName        String?
@@ -62,7 +74,7 @@ model Vendor {
   products            Product[]
   orders              Order[]
   customers           Customer[]
-  categories          Category[] // <-- NEW: Link to categories
+  categories          Category[] 
   
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
