@@ -70,6 +70,89 @@ export const DashboardSkeleton = () => {
   );
 };
 
+export const StoreFrontSkeleton = () => {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans flex flex-col overflow-hidden">
+        
+        {/* 1. HEADER SKELETON */}
+        <header className="bg-white border-b border-gray-100 shadow-sm">
+          {/* Top Info Bar Placeholder */}
+          <div className="hidden lg:block bg-gray-100/50 h-8 w-full animate-pulse"></div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+            {/* Logo & Store Name Placeholder */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gray-200 animate-pulse"></div>
+              <div className="flex flex-col gap-2">
+                <div className="w-24 sm:w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-16 h-2 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Search Bar Placeholder */}
+            <div className="flex-1 max-w-xl hidden md:block">
+              <div className="w-full h-[44px] bg-gray-100 rounded-full animate-pulse"></div>
+            </div>
+
+            {/* Icons & Cart Placeholder */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse md:hidden"></div>
+              <div className="w-8 h-8 rounded-md bg-gray-200 animate-pulse"></div>
+              <div className="hidden sm:block">
+                <div className="w-12 h-2 bg-gray-200 rounded animate-pulse mb-1.5"></div>
+                <div className="w-16 h-3 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* 2. HERO SECTION SKELETON */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-8 mt-6 mb-12 w-full">
+          <div className="w-full h-[60vh] sm:h-[70vh] rounded-[2rem] bg-gray-200 animate-pulse"></div>
+        </section>
+
+        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-8 w-full">
+          
+          {/* 3. CATEGORIES SKELETON */}
+          <section className="mb-16">
+            <div className="w-32 h-6 sm:h-8 bg-gray-200 rounded-md animate-pulse mb-6"></div>
+            <div className="flex overflow-hidden gap-6 sm:gap-10 pb-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex flex-col items-center gap-3 shrink-0">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gray-200 animate-pulse"></div>
+                  <div className="w-12 h-3 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 4. PRODUCTS GRID SKELETON */}
+          <section className="mb-16">
+            <div className="w-32 h-6 sm:h-8 bg-gray-200 rounded-md animate-pulse mb-6"></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="flex flex-col">
+                  {/* Image Placeholder */}
+                  <div className="aspect-[3/4] bg-gray-200 rounded-2xl animate-pulse mb-4"></div>
+                  
+                  {/* Title & Price Placeholders */}
+                  <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="w-1/3 h-4 bg-gray-200 rounded animate-pulse mb-3"></div>
+                  
+                  {/* Ratings & Add Button Placeholders */}
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="w-8 h-3 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="w-7 h-7 bg-gray-200 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
 // PRODUCT LIST SKELETON
 // export const ProductListSkeleton = () => {
 //   return (

@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   ShoppingBag, Building2, Phone, CreditCard, Truck, Palette,
-  ChevronDown, Check, Copy, ChevronRight, Settings as SettingsIcon,
+  ChevronDown, Check, Plus, ChevronRight, Settings as SettingsIcon,
   Loader2, Save, AlertCircle, CheckCircle2, Lock, Star,
- MessageCircle, Mail, Image as ImageIcon,
+  MessageCircle, Mail, Image as ImageIcon,
   ExternalLink, Camera, Landmark, Wallet, Globe, XCircle, Eye, ArrowLeft, RefreshCw, Trash2
 } from "lucide-react";
 import FB from "../../assets/social icons/facebook.svg";
@@ -23,17 +23,23 @@ const Settings = () => {
   const [linkMessage, setLinkMessage] = useState("");
   
   const [sameAsWhatsApp, setSameAsWhatsApp] = useState(false);
-  
-  // NEW: State for the Delete Store confirmation input
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const logoInputRef = useRef(null);
   const bannerInputRef = useRef(null);
+  
+  const slide1Ref = useRef(null);
+  const slide2Ref = useRef(null);
+  const slide3Ref = useRef(null);
+  const secondaryBannerRef = useRef(null);
 
   const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-  const currentPlan = vendor.plan || "FREE";
+ const [currentPlan, setCurrentPlan] = useState(vendor.plan || "FREE");
+  
   const canEditBanner = currentPlan === "STARTER" || currentPlan === "GROWTH";
+  const canUseSlideshow = currentPlan === "STARTER" || currentPlan === "GROWTH";
   const canEditTheme = currentPlan === "GROWTH";
+  const canUseSecondaryBanner = currentPlan === "GROWTH";
 
   const [formData, setFormData] = useState({
     storeName: "",
@@ -46,11 +52,20 @@ const Settings = () => {
     instagram: "",
     facebook: "",
     twitter: "",
+    tiktok: "",   
+    snapchat: "", 
     themeColor: "#044e3b",
+    
     hasBanner: false,
     bannerSubtitle: "",
     bannerTitle: "",
     bannerDiscount: "",
+    enableSlideshow: false,
+    
+    enableSecondaryBanner: false,
+    secondaryBannerTitle: "",
+    secondaryBannerDesc: "",
+    
     businessName: "",
     cacNumber: "",
     businessAddress: "",
@@ -66,6 +81,16 @@ const Settings = () => {
   const [logoPreview, setLogoPreview] = useState("");
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState("");
+  
+  const [slide1File, setSlide1File] = useState(null);
+  const [slide1Preview, setSlide1Preview] = useState("");
+  const [slide2File, setSlide2File] = useState(null);
+  const [slide2Preview, setSlide2Preview] = useState("");
+  const [slide3File, setSlide3File] = useState(null);
+  const [slide3Preview, setSlide3Preview] = useState("");
+  
+  const [secondaryBannerFile, setSecondaryBannerFile] = useState(null);
+  const [secondaryBannerPreview, setSecondaryBannerPreview] = useState("");
 
   const themeColors = [
     { name: "Sabi Green", hex: "#044e3b" }, { name: "Midnight Black", hex: "#111827" },
@@ -90,31 +115,48 @@ const Settings = () => {
       try {
         const response = await api.get('/vendors/profile'); 
         const data = response.data.vendor;
+
+        setCurrentPlan(data.plan || "FREE"); 
         
+        // 2. Silently update local storage so it stays perfectly synced with the DB
+        localStorage.setItem('sabisell_vendor', JSON.stringify({ ...vendor, ...data }));
+        
+        // Helper function to prevent literal "null" strings
+        const cleanString = (val) => (val && val !== "null") ? val : "";
+
         setFormData({
-          storeName: data.storeName || "",
-          storeCategory: data.storeCategory || "Fashion & Clothing",
-          storeDescription: data.storeDescription || "",
-          storeLink: data.storeLink || "",
-          phone: data.phone || "",
-          whatsapp: data.whatsapp || "",
-          email: data.email || "",
-          instagram: data.instagram || "",
-          facebook: data.facebook || "",
-          twitter: data.twitter || "",
+          storeName: cleanString(data.storeName),
+          storeCategory: cleanString(data.storeCategory) || "Fashion & Clothing",
+          storeDescription: cleanString(data.storeDescription),
+          storeLink: cleanString(data.storeLink),
+          phone: cleanString(data.phone),
+          whatsapp: cleanString(data.whatsapp),
+          email: cleanString(data.email),
+          instagram: cleanString(data.instagram),
+          facebook: cleanString(data.facebook),
+          twitter: cleanString(data.twitter),
+          tiktok: cleanString(data.tiktok),     
+          snapchat: cleanString(data.snapchat), 
           themeColor: data.themeColor || "#044e3b",
-          hasBanner: data.hasBanner ?? false,
-          bannerTitle: data.bannerTitle || "",
-          bannerSubtitle: data.bannerSubtitle || "",
-          bannerDiscount: data.bannerDiscount || "",
-          businessName: data.businessName || "",
-          cacNumber: data.cacNumber || "",
-          businessAddress: data.businessAddress || "",
+          
+          hasBanner: data.hasBanner ?? true,
+          bannerTitle: cleanString(data.bannerTitle),
+          bannerSubtitle: cleanString(data.bannerSubtitle),
+          bannerDiscount: cleanString(data.bannerDiscount),
+          enableSlideshow: data.enableSlideshow ?? false,
+          
+          enableSecondaryBanner: data.enableSecondaryBanner ?? false,
+          secondaryBannerTitle: cleanString(data.secondaryBannerTitle),
+          secondaryBannerDesc: cleanString(data.secondaryBannerDesc),
+
+          businessName: cleanString(data.businessName),
+          cacNumber: cleanString(data.cacNumber),
+          businessAddress: cleanString(data.businessAddress),
           showBusinessDetails: data.showBusinessDetails ?? false,
-          bankName: data.bankName || "",
-          accountNumber: data.accountNumber || "",
-          accountName: data.accountName || "",
-          deliveryFee: data.deliveryFee || "",
+          bankName: cleanString(data.bankName),
+          accountNumber: cleanString(data.accountNumber),
+          accountName: cleanString(data.accountName),
+          deliveryFee: cleanString(data.deliveryFee),
           deliveryTime: data.deliveryTime || "2-3 Business Days"
         });
         
@@ -123,8 +165,16 @@ const Settings = () => {
         }
 
         setIsStoreOnline(data.isOnline ?? true);
-        if (data.logoUrl) setLogoPreview(data.logoUrl);
-        if (data.bannerImage) setBannerPreview(data.bannerImage);
+        
+        if (data.logoUrl && data.logoUrl !== "null") setLogoPreview(data.logoUrl);
+        if (data.bannerImage && data.bannerImage !== "null") setBannerPreview(data.bannerImage);
+        if (data.slideshowImages) {
+          if (data.slideshowImages[0]) setSlide1Preview(data.slideshowImages[0]);
+          if (data.slideshowImages[1]) setSlide2Preview(data.slideshowImages[1]);
+          if (data.slideshowImages[2]) setSlide3Preview(data.slideshowImages[2]);
+        }
+        if (data.secondaryBannerImage && data.secondaryBannerImage !== "null") setSecondaryBannerPreview(data.secondaryBannerImage);
+
       } catch (err) {
         setFormData(prev => ({ ...prev, storeName: vendor.storeName || "", storeLink: vendor.storeLink || "" }));
         if (vendor.logoUrl) setLogoPreview(vendor.logoUrl);
@@ -166,7 +216,6 @@ const Settings = () => {
     
     if (name === "phone" || name === "whatsapp") {
       const formattedNumber = value.replace(/[^\d+]/g, '').slice(0, 14);
-      
       setFormData(prev => ({
         ...prev,
         [name]: formattedNumber,
@@ -201,12 +250,38 @@ const Settings = () => {
       return;
     }
     const previewUrl = URL.createObjectURL(file);
-    if (type === "logo") {
-      setLogoFile(file);
-      setLogoPreview(previewUrl);
-    } else {
-      setBannerFile(file);
-      setBannerPreview(previewUrl);
+    
+    switch (type) {
+      case "logo": setLogoFile(file); setLogoPreview(previewUrl); break;
+      case "banner": setBannerFile(file); setBannerPreview(previewUrl); break;
+      case "slide1": setSlide1File(file); setSlide1Preview(previewUrl); break;
+      case "slide2": setSlide2File(file); setSlide2Preview(previewUrl); break;
+      case "slide3": setSlide3File(file); setSlide3Preview(previewUrl); break;
+      case "secondaryBanner": setSecondaryBannerFile(file); setSecondaryBannerPreview(previewUrl); break;
+      default: break;
+    }
+  };
+
+  // --- NEW: Function to auto-save Store Online/Offline status ---
+  const handleToggleStoreStatus = async () => {
+    const newState = !isStoreOnline;
+    setIsStoreOnline(newState); // Optimistic UI update
+
+    try {
+      const data = new FormData();
+      // We must append all existing formData so the backend doesn't overwrite it
+      Object.keys(formData).forEach(key => data.append(key, formData[key]));
+      data.append("isOnline", newState);
+
+      const response = await api.put('/vendors/settings', data);
+      
+      // Update local storage
+      const updatedVendor = { ...vendor, ...response.data.vendor };
+      localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
+      
+    } catch (error) {
+      setIsStoreOnline(!newState); // Revert on failure
+      console.error("Failed to toggle store status", error);
     }
   };
 
@@ -225,6 +300,10 @@ const Settings = () => {
 
       if (logoFile) data.append("logo", logoFile);
       if (bannerFile) data.append("bannerImage", bannerFile);
+      if (slide1File) data.append("slide1", slide1File);
+      if (slide2File) data.append("slide2", slide2File);
+      if (slide3File) data.append("slide3", slide3File);
+      if (secondaryBannerFile) data.append("secondaryBannerImage", secondaryBannerFile);
 
       const response = await api.put('/vendors/settings', data);
       const updatedVendor = { ...vendor, ...response.data.vendor };
@@ -244,7 +323,6 @@ const Settings = () => {
   };
 
   const handleDeleteStore = async () => {
-    // You will need to create the DELETE /api/vendors/store endpoint to handle this
     alert("Store deletion API call would happen here!");
   };
 
@@ -258,7 +336,7 @@ const Settings = () => {
   const goBackToMenu = () => {
     setActiveView("menu");
     setMessage({ type: "", text: "" });
-    setDeleteConfirmText(""); // Reset delete input when leaving
+    setDeleteConfirmText(""); 
     const scrollArea = document.getElementById("settings-scroll-area");
     if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -316,7 +394,8 @@ const Settings = () => {
                  </a>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-500">Toggle Status</span>
-                  <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${isStoreOnline ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => setIsStoreOnline(!isStoreOnline)}>
+                  {/* AUTO-SAVE TOGGLE HOOKED UP HERE */}
+                  <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${isStoreOnline ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={handleToggleStoreStatus}>
                     <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${isStoreOnline ? "translate-x-6" : "translate-x-0"}`}></div>
                   </div>
                 </div>
@@ -364,7 +443,6 @@ const Settings = () => {
                 </h2>
               </div>
               
-              {/* Only show Save button if not on delivery view */}
               {activeView !== "delivery" && (
                 <button onClick={handleSubmit} disabled={isLoading || linkStatus === "checking" || linkStatus === "unavailable"} className="text-sm font-bold bg-[#044e3b] text-white px-6 py-2.5 rounded-xl hover:bg-emerald-800 transition-colors flex items-center gap-2 disabled:opacity-70 shadow-md hover:shadow-lg">
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -435,7 +513,7 @@ const Settings = () => {
 
                   <hr className="border-gray-100 my-8" />
                   
-                  {/* NEW: DANGER ZONE - DELETE STORE */}
+                  {/* DANGER ZONE - DELETE STORE */}
                   <div className="bg-red-50 border border-red-100 rounded-3xl p-6 sm:p-8">
                     <h3 className="text-lg font-extrabold text-red-900 mb-2 flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-red-600" /> Danger Zone
@@ -508,7 +586,8 @@ const Settings = () => {
                   <h3 className="text-base font-bold text-gray-900 mb-2">Chat & Social Media Links</h3>
                   <p className="text-sm font-bold text-gray-900 mb-4">Username only</p>
 
-                  <div className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {/* WhatsApp */}
                     <div>
                       <div className="relative">
                         <MessageCircle className="absolute left-4 top-3.5 w-5 h-5 text-green-500" />
@@ -526,18 +605,36 @@ const Settings = () => {
                       {sameAsWhatsApp && <p className="text-[10px] font-bold text-green-600 mt-1">Synced with phone number</p>}
                     </div>
 
+                    {/* Instagram */}
                     <div className="relative">
-                      <img src={IG} alt="Instagram" className="absolute left-4 top-3.5 w-5 h-5 text-pink-500" />
-                      <input type="text" name="instagram" value={formData.instagram} onChange={handleChange} placeholder="Instagram Handle or Link" className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
+                      <img src={IG} alt="Instagram" className="absolute left-4 top-3.5 w-5 h-5" />
+                      <input type="text" name="instagram" value={formData.instagram} onChange={handleChange} placeholder="Instagram Handle" className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
                     </div>
+                    
+                    {/* Facebook */}
                     <div className="relative">
-                      <img src={FB} alt="Facebook" className="absolute left-4 top-3.5 w-5 h-5 text-blue-600" />
+                      <img src={FB} alt="Facebook" className="absolute left-4 top-3.5 w-5 h-5" />
                       <input type="text" name="facebook" value={formData.facebook} onChange={handleChange} placeholder="Facebook Page Link" className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
                     </div>
+                    
+                    {/* Twitter/X */}
                     <div className="relative">
-                      <img src={X} alt="Twitter / X" className="absolute left-4 top-3.5 w-5 h-5 text-gray-900" />
+                      <img src={X} alt="Twitter / X" className="absolute left-4 top-3.5 w-5 h-5" />
                       <input type="text" name="twitter" value={formData.twitter} onChange={handleChange} placeholder="Twitter / X Handle" className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
                     </div>
+
+                    {/* TikTok */}
+                    <div className="relative">
+                      <div className="absolute left-4 top-3.5 font-bold text-gray-800 text-[10px] bg-gray-200 px-1 py-0.5 rounded">TT</div>
+                      <input type="text" name="tiktok" value={formData.tiktok} onChange={handleChange} placeholder="TikTok Handle" className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
+                    </div>
+
+                    {/* Snapchat */}
+                    <div className="relative">
+                      <div className="absolute left-4 top-3.5 font-bold text-yellow-600 bg-yellow-100 text-[10px] px-1 py-0.5 rounded">SC</div>
+                      <input type="text" name="snapchat" value={formData.snapchat} onChange={handleChange} placeholder="Snapchat Handle" className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -546,7 +643,7 @@ const Settings = () => {
               {activeView === "appearance" && (
                 <div className="space-y-10 animate-in fade-in duration-300">
                   
-                  {/* STORE LOGO (Available on ALL plans) */}
+                  {/* STORE LOGO */}
                   <div>
                     <h3 className="text-sm font-bold text-gray-900 mb-3">Store Logo</h3>
                     <div className="flex items-center gap-4">
@@ -567,7 +664,7 @@ const Settings = () => {
 
                   <hr className="border-gray-100" />
 
-                  {/* BRAND THEME COLOR (Locked on Free & Starter -> Requires Growth) */}
+                  {/* BRAND THEME COLOR */}
                   <div className="relative">
                     {!canEditTheme && (
                       <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-6 rounded-3xl border border-gray-100">
@@ -611,83 +708,215 @@ const Settings = () => {
 
                   <hr className="border-gray-100" />
 
-                  {/* PAYWALLED DYNAMIC BANNER (Locked on Free -> Requires Starter) */}
-                  <div className="relative">
+                  {/* HERO BANNER SECTION */}
+                  <div className={`border border-gray-200 rounded-3xl p-5 sm:p-6 bg-gray-50/50`}>
+                    
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-gray-900">Promotional Hero Banner</h3>
+                        <p className="text-xs font-medium text-gray-500 mt-0.5">Display a marketing banner at the top of your store.</p>
+                      </div>
+                      <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.hasBanner ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => setFormData({ ...formData, hasBanner: !formData.hasBanner })}>
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.hasBanner ? "translate-x-6" : "translate-x-0"}`}></div>
+                      </div>
+                    </div>
+
                     {!canEditBanner && (
-                      <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-6 rounded-3xl border border-gray-100 mt-4">
-                        <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mb-3 border border-yellow-200 shadow-sm">
-                          <Lock className="w-6 h-6 text-yellow-600" />
+                      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-start gap-3">
+                         <Lock className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                         <div>
+                           <p className="text-sm font-bold text-yellow-800">Upgrade to Customize</p>
+                           <p className="text-xs font-medium text-yellow-700 mt-1 mb-2">Free users can toggle the default banner on or off. Upgrade to Starter to add your own custom text and images.</p>
+                           <Link to="/dashboard/billing" className="text-[11px] bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm w-fit block">Upgrade Plan</Link>
+                         </div>
+                      </div>
+                    )}
+
+                    <div className={`space-y-5 ${!canEditBanner ? 'opacity-70' : ''}`}>
+                      
+                      {/* Main Hero Image */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-2">Background Image</label>
+                        <input type="file" accept="image/*" ref={bannerInputRef} onChange={(e) => handleImageChange(e, "banner")} className="hidden" disabled={!canEditBanner}/>
+                        
+                        {bannerPreview ? (
+                           <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
+                              <img src={bannerPreview} alt="Banner" className="w-full h-full object-cover" />
+                              {canEditBanner && (
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <button type="button" onClick={() => bannerInputRef.current?.click()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg">Change Image</button>
+                                </div>
+                              )}
+                           </div>
+                        ) : (
+                          <button type="button" onClick={() => bannerInputRef.current?.click()} disabled={!canEditBanner} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1 transition-colors">
+                            <ImageIcon className="w-5 h-5 text-gray-400" />
+                            <span className="text-xs font-bold text-gray-500">Upload Background</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Text Inputs */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-2">Banner Title</label>
+                        <input type="text" name="bannerTitle" value={formData.bannerTitle} onChange={handleChange} placeholder="Discover Quality & Excellence." className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-gray-900 text-sm disabled:bg-gray-50" disabled={!canEditBanner}/>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Subtitle</label>
+                          <input type="text" name="bannerSubtitle" value={formData.bannerSubtitle} onChange={handleChange} placeholder="e.g. Welcome to our store" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-sm disabled:bg-gray-50" disabled={!canEditBanner}/>
                         </div>
-                        <h4 className="text-base font-extrabold text-gray-900 drop-shadow-sm bg-white/80 px-2 py-0.5 rounded">Unlock Promo Banners</h4>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Discount Text</label>
+                          <input type="text" name="bannerDiscount" value={formData.bannerDiscount} onChange={handleChange} placeholder="e.g. SHOP NOW" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-yellow-600 text-sm disabled:bg-gray-50" disabled={!canEditBanner}/>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* HERO SLIDESHOW (Locked for Free) */}
+                    <div className="mt-8 pt-8 border-t border-gray-200 relative">
+                       {!canUseSlideshow && (
+                         <div className="absolute inset-0 z-10 bg-gray-50/50 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-2xl border border-gray-100">
+                            <Lock className="w-6 h-6 text-gray-400 mb-2" />
+                            <p className="text-xs font-bold text-gray-700">Slideshow requires Starter Plan</p>
+                         </div>
+                       )}
+
+                       <div className={`flex items-center justify-between mb-4 ${!canUseSlideshow ? 'opacity-40' : ''}`}>
+                         <div>
+                           <h4 className="text-sm font-bold text-gray-900">Enable Slideshow</h4>
+                           <p className="text-xs font-medium text-gray-500 mt-0.5">Add up to 3 extra images to rotate in the hero section.</p>
+                         </div>
+                         <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.enableSlideshow ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => canUseSlideshow && setFormData({ ...formData, enableSlideshow: !formData.enableSlideshow })}>
+                           <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.enableSlideshow ? "translate-x-6" : "translate-x-0"}`}></div>
+                         </div>
+                       </div>
+
+                       {formData.enableSlideshow && (
+                         <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${!canUseSlideshow ? 'opacity-40 pointer-events-none' : ''}`}>
+                           
+                           {/* Slide 1 */}
+                           <div>
+                              <input type="file" accept="image/*" ref={slide1Ref} onChange={(e) => handleImageChange(e, "slide1")} className="hidden" />
+                              {slide1Preview ? (
+                                <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
+                                   <img src={slide1Preview} alt="Slide 1" className="w-full h-full object-cover" />
+                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                      <button type="button" onClick={() => slide1Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
+                                   </div>
+                                </div>
+                              ) : (
+                                <button type="button" onClick={() => slide1Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
+                                   <Plus className="w-5 h-5 text-gray-400" />
+                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 2</span>
+                                </button>
+                              )}
+                           </div>
+                           
+                           {/* Slide 2 */}
+                           <div>
+                              <input type="file" accept="image/*" ref={slide2Ref} onChange={(e) => handleImageChange(e, "slide2")} className="hidden" />
+                              {slide2Preview ? (
+                                <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
+                                   <img src={slide2Preview} alt="Slide 2" className="w-full h-full object-cover" />
+                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                      <button type="button" onClick={() => slide2Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
+                                   </div>
+                                </div>
+                              ) : (
+                                <button type="button" onClick={() => slide2Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
+                                   <Plus className="w-5 h-5 text-gray-400" />
+                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 3</span>
+                                </button>
+                              )}
+                           </div>
+
+                           {/* Slide 3 */}
+                           <div>
+                              <input type="file" accept="image/*" ref={slide3Ref} onChange={(e) => handleImageChange(e, "slide3")} className="hidden" />
+                              {slide3Preview ? (
+                                <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
+                                   <img src={slide3Preview} alt="Slide 3" className="w-full h-full object-cover" />
+                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                      <button type="button" onClick={() => slide3Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
+                                   </div>
+                                </div>
+                              ) : (
+                                <button type="button" onClick={() => slide3Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
+                                   <Plus className="w-5 h-5 text-gray-400" />
+                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 4</span>
+                                </button>
+                              )}
+                           </div>
+
+                         </div>
+                       )}
+                    </div>
+                  </div>
+
+                  <hr className="border-gray-100" />
+
+                  {/* SECONDARY FOOTER BANNER (Requires Growth Plan) */}
+                  <div className="relative">
+                    {!canUseSecondaryBanner && (
+                      <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-6 rounded-3xl border border-gray-100">
+                        <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mb-3 border border-indigo-200 shadow-sm">
+                          <Lock className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <h4 className="text-base font-extrabold text-gray-900 drop-shadow-sm bg-white/80 px-2 py-0.5 rounded">Unlock Secondary Banner</h4>
                         <p className="text-xs font-bold text-gray-800 mt-1 mb-4 max-w-xs bg-white/80 px-3 py-1.5 rounded-lg shadow-sm">
-                          Upgrade to Starter to add customizable hero banners and run sales campaigns on your store.
+                          Upgrade to the Growth Plan to display an extra promotional banner near your store's footer.
                         </p>
-                        <Link to="/dashboard/billing" className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 hover:scale-105">
-                          <Star className="w-4 h-4 fill-white" /> Upgrade Plan
+                        <Link to="/dashboard/billing" className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 hover:scale-105">
+                          <Star className="w-4 h-4 fill-white" /> Upgrade to Growth
                         </Link>
                       </div>
                     )}
 
-                    <div className={`border border-gray-200 rounded-3xl p-5 sm:p-6 bg-gray-50/50 ${!canEditBanner ? 'opacity-70 pointer-events-none select-none' : ''}`}>
+                    <div className={`border border-gray-200 rounded-3xl p-5 sm:p-6 bg-gray-50/50 ${!canUseSecondaryBanner ? 'opacity-40 pointer-events-none select-none' : ''}`}>
                       <div className="flex items-center justify-between mb-6">
                         <div>
-                          <h3 className="text-sm font-extrabold text-gray-900">Promotional Hero Banner</h3>
-                          <p className="text-xs font-medium text-gray-500 mt-0.5">Display a marketing banner at the top of your store.</p>
+                          <h3 className="text-sm font-extrabold text-gray-900">Secondary Footer Banner</h3>
+                          <p className="text-xs font-medium text-gray-500 mt-0.5">A wide promotional banner shown right above your store footer.</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.hasBanner ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => canEditBanner && setFormData({ ...formData, hasBanner: !formData.hasBanner })}>
-                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.hasBanner ? "translate-x-6" : "translate-x-0"}`}></div>
+                        <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.enableSecondaryBanner ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => canUseSecondaryBanner && setFormData({ ...formData, enableSecondaryBanner: !formData.enableSecondaryBanner })}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.enableSecondaryBanner ? "translate-x-6" : "translate-x-0"}`}></div>
                         </div>
                       </div>
 
                       <div className="space-y-5">
-                        {!canEditBanner && !bannerPreview && (
-                           <div className="w-full h-32 rounded-xl overflow-hidden relative mb-4">
-                              <img src="https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=800&q=80" alt="Preview" className="w-full h-full object-cover opacity-80" />
-                              <div className="absolute inset-0 bg-black/40 flex flex-col justify-center px-6">
-                                 <span className="text-white text-xs font-bold bg-white/20 w-fit px-2 py-1 rounded backdrop-blur-md mb-1">New Arrivals</span>
-                                 <span className="text-white text-xl font-extrabold">Eid Collection<br/>Now Live</span>
-                              </div>
-                           </div>
-                        )}
-
-                        {(canEditBanner || bannerPreview) && (
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Background Image</label>
-                            <input type="file" accept="image/*" ref={bannerInputRef} onChange={(e) => handleImageChange(e, "banner")} className="hidden" disabled={!canEditBanner}/>
+                         <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-2">Banner Image</label>
+                            <input type="file" accept="image/*" ref={secondaryBannerRef} onChange={(e) => handleImageChange(e, "secondaryBanner")} className="hidden" />
                             
-                            {bannerPreview ? (
+                            {secondaryBannerPreview ? (
                                <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
-                                  <img src={bannerPreview} alt="Banner" className="w-full h-full object-cover" />
+                                  <img src={secondaryBannerPreview} alt="Secondary Banner" className="w-full h-full object-cover" />
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <button type="button" onClick={() => bannerInputRef.current?.click()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg">Change Image</button>
+                                    <button type="button" onClick={() => secondaryBannerRef.current?.click()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg">Change Image</button>
                                   </div>
                                </div>
                             ) : (
-                              <button type="button" onClick={() => bannerInputRef.current?.click()} disabled={!canEditBanner} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1 transition-colors">
+                              <button type="button" onClick={() => secondaryBannerRef.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1 transition-colors">
                                 <ImageIcon className="w-5 h-5 text-gray-400" />
-                                <span className="text-xs font-bold text-gray-500">Upload Background</span>
+                                <span className="text-xs font-bold text-gray-500">Upload Banner Image</span>
                               </button>
                             )}
                           </div>
-                        )}
-
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-2">Banner Title</label>
-                          <input type="text" name="bannerTitle" value={formData.bannerTitle} onChange={handleChange} placeholder="e.g. Eid Collection Now Live!" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-gray-900 text-sm" disabled={!canEditBanner}/>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          
                           <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Subtitle</label>
-                            <input type="text" name="bannerSubtitle" value={formData.bannerSubtitle} onChange={handleChange} placeholder="e.g. Fresh styles." className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-sm" disabled={!canEditBanner}/>
+                            <label className="block text-xs font-bold text-gray-700 mb-2">Banner Title</label>
+                            <input type="text" name="secondaryBannerTitle" value={formData.secondaryBannerTitle} onChange={handleChange} placeholder="Look Good. Feel Unstoppable." className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-gray-900 text-sm" />
                           </div>
+                          
                           <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Discount Text</label>
-                            <input type="text" name="bannerDiscount" value={formData.bannerDiscount} onChange={handleChange} placeholder="e.g. -20% OFF" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-yellow-600 text-sm" disabled={!canEditBanner}/>
+                            <label className="block text-xs font-bold text-gray-700 mb-2">Description Text</label>
+                            <textarea rows="2" name="secondaryBannerDesc" value={formData.secondaryBannerDesc} onChange={handleChange} placeholder="Explore premium styles made to make you stand out." className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-[#044e3b] transition-all font-medium text-gray-700 text-sm resize-none"></textarea>
                           </div>
-                        </div>
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 
@@ -737,7 +966,6 @@ const Settings = () => {
               {/* 5. PAYMENTS */}
               {activeView === "payments" && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                  
                   <div className="space-y-5">
                     <div>
                       <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">

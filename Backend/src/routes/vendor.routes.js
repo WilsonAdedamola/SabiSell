@@ -41,7 +41,11 @@ router.put(
   protect, 
   upload.fields([
     { name: 'logo', maxCount: 1 }, 
-    { name: 'bannerImage', maxCount: 1 }
+    { name: 'bannerImage', maxCount: 1 },
+    { name: 'slide1', maxCount: 1 },
+  { name: 'slide2', maxCount: 1 },
+  { name: 'slide3', maxCount: 1 },
+  { name: 'secondaryBannerImage', maxCount: 1 }
   ]), 
   vendorController.updateVendorSettings
 );
