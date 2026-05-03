@@ -6,7 +6,9 @@ const prisma = require('../config/db');
 // @desc    Register a new vendor
 exports.signup = async (req, res) => {
   try {
-    const { fullName, email, phone, password } = req.body;
+    let { fullName, email, phone, password } = req.body;
+
+    email = email.toLowerCase().trim();
 
     // 1. Check if the vendor already exists
     const existingVendor = await prisma.vendor.findUnique({
@@ -39,6 +41,9 @@ exports.signup = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // --- NEW: Brand new users are never onboarded yet ---
+    const isOnboarded = false;
+
     // 5. Send success response (excluding the password)
     res.status(201).json({
       message: "Account created successfully!",
@@ -48,7 +53,8 @@ exports.signup = async (req, res) => {
         fullName: newVendor.fullName,
         email: newVendor.email,
         plan: newVendor.plan
-      }
+      },
+      isOnboarded // <-- Added flag here
     });
 
   } catch (error) {
@@ -62,7 +68,9 @@ exports.signup = async (req, res) => {
 // @desc    Authenticate vendor & get token
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    email = email.toLowerCase().trim();
 
     // 1. Check if the vendor exists
     const vendor = await prisma.vendor.findUnique({ where: { email } });
@@ -83,6 +91,9 @@ exports.login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // --- NEW: Check if the user has completed onboarding by looking for a storeLink ---
+    const isOnboarded = vendor.storeLink !== null && vendor.storeLink !== "";
+
     // 4. Send success response
     res.status(200).json({
       message: "Logged in successfully!",
@@ -97,7 +108,8 @@ exports.login = async (req, res) => {
         logoUrl: vendor.logoUrl,
         plan: vendor.plan,
         isOnline: vendor.isOnline
-      }
+      },
+      isOnboarded // <-- Added flag here
     });
 
   } catch (error) {

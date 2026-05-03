@@ -41,7 +41,12 @@ const Login = () => {
       localStorage.setItem('sabisell_token', response.data.token);
       localStorage.setItem('sabisell_vendor', JSON.stringify(response.data.vendor));
       
-        navigate('/dashboard');
+      // 3. CHECK THE FLAG AND REDIRECT
+      if (response.data.isOnboarded) {
+        navigate('/dashboard'); // Take them to the main app
+      } else {
+        navigate('/dashboard/onboarding'); // Force them to finish creating a store
+      }
 
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.');

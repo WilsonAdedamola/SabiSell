@@ -67,7 +67,7 @@ exports.checkStoreLink = async (req, res) => {
 exports.completeOnboarding = async (req, res) => {
   try {
     const vendorId = req.vendor.id; 
-    const { storeName, storeType, storeDescription, storeLink } = req.body;
+    const { storeName, storeCategory, storeDescription, storeLink } = req.body;
 
     if (!storeLink) {
       return res.status(400).json({ message: "Store link is required." });
@@ -98,7 +98,7 @@ exports.completeOnboarding = async (req, res) => {
       where: { id: vendorId },
       data: {
         storeName,
-        storeType,
+        storeCategory,
         storeDescription,
         storeLink: finalStoreLink,
         isOnline: true,
@@ -193,6 +193,10 @@ exports.updateVendorSettings = async (req, res) => {
       bankName, accountNumber, accountName, deliveryFee, deliveryTime,
       isOnline
     } = req.body;
+
+    if (email) {
+      email = email.toLowerCase();
+    }
 
     // 2. Format and check the custom store link
     const finalStoreLink = storeLink
