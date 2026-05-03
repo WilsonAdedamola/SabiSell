@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 const Toast = ({ message, type = 'success', onClose }) => {
-  // Auto-close after 3 seconds
+  // Auto-close after 4 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 3000);
+    }, 4000);
     return () => clearTimeout(timer);
   }, [onClose]);
 

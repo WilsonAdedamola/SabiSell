@@ -266,12 +266,12 @@ const Storefront = () => {
         
         {/* 3. CIRCULAR CATEGORIES */}
         {categoriesList.length > 1 && (
-          <section className="mb-16">
+          <section className="my-7 md:mb-16 md:mt-10">
              <div className="flex justify-between items-end mb-6">
                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">Categories</h3>
              </div>
              
-             <div className="flex overflow-x-auto hide-scrollbar gap-6 sm:gap-10 pb-4 px-2 -mx-2">
+             <div className="flex overflow-x-auto hide-scrollbar gap-6 sm:gap-10 py-3 px-2 -mx-2">
                 {categoriesList.map((category) => (
                     <button 
                       key={category}
@@ -298,7 +298,10 @@ const Storefront = () => {
         {/* 4. ALL PRODUCTS GRID */}
         <section id="products" className="mb-16 mt-8">
            <div className="flex justify-between items-end mb-6">
-             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">All Products</h3>
+             {/* --- NEW: Dynamic Category Title --- */}
+             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">
+               {activeCategory === "All" ? "All Products" : activeCategory}
+             </h3>
            </div>
 
           {filteredProducts.length === 0 ? (
@@ -383,7 +386,7 @@ const Storefront = () => {
           )}
         </section>
 
-        {/* 5. SECONDARY PROMO BANNER (NOW CORRECTLY BOUND TO isGrowth) */}
+        {/* 5. SECONDARY PROMO BANNER */}
         {isGrowth && store.enableSecondaryBanner && (
           <section className="mb-16 w-full">
             <div className="w-full rounded-3xl overflow-hidden flex flex-col md:flex-row relative shadow-sm" style={themeStyle}>

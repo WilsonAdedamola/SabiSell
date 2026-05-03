@@ -183,7 +183,7 @@ exports.updateVendorSettings = async (req, res) => {
     const vendorId = req.vendor.id;
 
     // 1. Extract text fields from req.body (FormData sends everything as strings)
-    const {
+    let {
       storeName, storeCategory, storeDescription, storeLink,
       phone, whatsapp, email, instagram, facebook, twitter, tiktok, snapchat,
       themeColor, hasBanner, bannerTitle, bannerSubtitle, bannerDiscount,

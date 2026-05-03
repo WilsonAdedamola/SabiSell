@@ -28,7 +28,7 @@ const Products = () => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // --- NEW: Modal State Variables ---
+  // Modal State Variables 
   const [productToDelete, setProductToDelete] = useState(null);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,10 +54,7 @@ const Products = () => {
         const catRes = await api.get('/categories');
         setCategories(catRes.data.categories || []);
       } catch (e) {
-        setCategories([
-          { id: "1", name: "Fashion & Clothing" },
-          { id: "2", name: "Health & Beauty" }
-        ]);
+        setCategories([]); // Fallback to empty if it fails
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -106,33 +103,55 @@ const Products = () => {
     filteredProducts = filteredProducts.filter(p => p.status === 'DRAFT');
   }
 
-  // --- CATEGORY LOGIC ---
+  // --- NEW FIXED CATEGORY LOGIC ---
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    const newCat = { id: Date.now().toString(), name: newCategoryName };
-    setCategories([...categories, newCat]);
-    setNewCategoryName("");
-    setMessage({ type: "success", text: "Category added!" });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    
+    try {
+      // 1. Send the new category to the backend
+      const response = await api.post('/categories', { name: newCategoryName });
+      
+      // 2. Update the screen using the real data from the backend
+      setCategories([...categories, response.data.category]); 
+      setNewCategoryName("");
+      setMessage({ type: "success", text: "Category added." });
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: "error", text: error.response?.data?.message || "Failed to add category." });
+    } finally {
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    }
   };
 
   const handleUpdateCategory = async () => {
     if (!editingCategory.name.trim()) return;
-    setCategories(categories.map(c => c.id === editingCategory.id ? editingCategory : c));
-    setEditingCategory(null);
-    setMessage({ type: "success", text: "Category updated!" });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    
+    try {
+      // 1. Send the update to the backend
+      await api.put(`/categories/${editingCategory.id}`, { name: editingCategory.name });
+      
+      // 2. Update the screen
+      setCategories(categories.map(c => c.id === editingCategory.id ? editingCategory : c));
+      setEditingCategory(null);
+      setMessage({ type: "success", text: "Category updated." });
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to update category." });
+    } finally {
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    }
   };
 
   const executeCategoryDelete = async () => {
     if (!categoryToDelete) return;
     setIsDeleting(true);
     try {
-      // Simulate API delay
-      await new Promise(res => setTimeout(res, 500));
+      // 1. Delete from backend
+      await api.delete(`/categories/${categoryToDelete.id}`);
+      
+      // 2. Update the screen
       setCategories(categories.filter(c => c.id !== categoryToDelete.id));
-      setMessage({ type: "success", text: "Category deleted successfully." });
+      setMessage({ type: "success", text: "Category deleted." });
     } catch (error) {
       setMessage({ type: "error", text: "Failed to delete category." });
     } finally {

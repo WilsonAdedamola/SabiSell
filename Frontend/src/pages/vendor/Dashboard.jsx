@@ -66,6 +66,14 @@ const Dashboard = () => {
     }
   }
 
+  // --- DYNAMIC STORE URL LOGIC ---
+  const isFreeHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost');
+  const storeUrl = vendor?.storeLink 
+    ? (isFreeHost 
+        ? `/store/${vendor.storeLink}` 
+        : `${window.location.protocol}//${vendor.storeLink}.${window.location.host.replace('www.', '')}`)
+    : "#";
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative">
       <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500 mt-4 sm:mt-0">
@@ -125,7 +133,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Primary CTA */}
-                <Link to="/dashboard/onboarding" className="w-full flex flex-col items-center justify-center py-4 bg-[#044e3b] hover:bg-sabi-primaryDark text-white rounded-2xl transition-all shadow-lg mb-8">
+                <Link to="/onboarding" className="w-full flex flex-col items-center justify-center py-4 bg-[#044e3b] hover:bg-sabi-primaryDark text-white rounded-2xl transition-all shadow-lg mb-8">
                    <span className="flex items-center gap-2 font-bold text-base"><Store className="w-5 h-5" /> Start Store Setup</span>
                    <span className="text-xs font-medium text-emerald-300 mt-0.5">Create your store in 3 quick steps</span>
                 </Link>
@@ -164,7 +172,7 @@ const Dashboard = () => {
               <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
 
               <div className="flex flex-col sm:flex-row items-center gap-5 z-10 w-full md:w-auto text-center sm:text-left">
-                {vendor.logoUrl ? (
+                {vendor.logoUrl && vendor.logoUrl !== "null" ? (
                   <img src={vendor.logoUrl} alt="Store Logo" className="w-20 h-20 rounded-full object-cover shadow-lg border-4 border-emerald-800/50 bg-white" />
                 ) : (
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shrink-0 shadow-lg p-2 border-4 border-emerald-800/50">
@@ -189,9 +197,10 @@ const Dashboard = () => {
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
                   <span className="text-emerald-100 text-xs font-bold uppercase tracking-wider">Online</span>
                 </div>
-                <Link to="/dashboard/store" className="bg-white/10 hover:bg-white/20 border border-white/20 transition-colors rounded-xl px-6 py-2.5 flex items-center gap-2 text-white font-bold text-sm w-full md:w-auto justify-center">
+                {/* --- FIXED: View Store Link --- */}
+                <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="bg-white/10 hover:bg-white/20 border border-white/20 transition-colors rounded-xl px-6 py-2.5 flex items-center gap-2 text-white font-bold text-sm w-full md:w-auto justify-center">
                   View Store <ChevronRight className="w-4 h-4" />
-                </Link>
+                </a>
               </div>
             </div>
 
@@ -271,7 +280,7 @@ const Dashboard = () => {
               <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
 
               <div className="flex flex-col sm:flex-row items-center gap-5 z-10 w-full md:w-auto text-center sm:text-left">
-                {vendor.logoUrl ? (
+                {vendor.logoUrl && vendor.logoUrl !== "null" ? (
                   <img src={vendor.logoUrl} alt="Store Logo" className="w-20 h-20 rounded-full object-cover shadow-lg border-4 border-emerald-800/50 bg-white" />
                 ) : (
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shrink-0 shadow-lg p-2 border-4 border-emerald-800/50">
@@ -298,12 +307,18 @@ const Dashboard = () => {
                     <span className="text-emerald-300 text-xs font-bold">Online</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 transition-colors rounded-xl p-3 cursor-pointer">
+                {/* --- FIXED: Clickable Store Link in Welcome Banner --- */}
+                <a 
+                  href={storeUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 transition-colors rounded-xl p-3 cursor-pointer"
+                >
                   <span className="text-emerald-50 text-sm font-medium truncate max-w-45">
-                    sabisell.com/{vendor.storeLink}
+                    {window.location.host.replace('www.', '')}/store/{vendor.storeLink}
                   </span>
                   <ExternalLink className="w-4 h-4 text-emerald-300 ml-auto shrink-0" />
-                </div>
+                </a>
               </div>
             </div>
 

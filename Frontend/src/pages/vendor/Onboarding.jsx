@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Confetti from 'react-confetti'
 import { 
   Store, Upload, Camera, CheckCircle2, XCircle,
   ArrowLeft, Lightbulb, Tag, Image as ImageIcon,
-  LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, ArrowRight, Rocket, Loader2, AlertCircle
+  LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, 
+  ArrowRight, Rocket, Loader2, AlertCircle, 
+  PartyPopper, Settings // <-- NEW: Added PartyPopper and Settings icons
 } from "lucide-react";
 import api from '../../utils/api';
 
@@ -21,14 +24,14 @@ const VendorOnboarding = () => {
   const [storeData, setStoreData] = useState({ storeName: "", storeLink: "", storeDescription: "" });
   
   // Link validation states
-  const [linkStatus, setLinkStatus] = useState("idle"); // 'idle', 'checking', 'available', 'unavailable'
+  const [linkStatus, setLinkStatus] = useState("idle"); 
   const [linkMessage, setLinkMessage] = useState("");
 
   // Step 2: Logo
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
-  // Step 3: First Product (Emptied initial state for placeholders)
+  // Step 3: First Product 
   const [productData, setProductData] = useState({ 
     name: "", 
     price: "", 
@@ -37,9 +40,10 @@ const VendorOnboarding = () => {
   const [productPhoto, setProductPhoto] = useState(null);
   const [productPreview, setProductPreview] = useState(null);
 
-  // Submission State
+  // Submission & Success State
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false); // <-- NEW: Success Screen State
 
   const storeTypes = [
     { id: "fashion", name: "Fashion & Clothing", icon: "👗" },
@@ -95,7 +99,6 @@ const VendorOnboarding = () => {
     const newName = e.target.value;
     const currentAutoSlug = storeData.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     
-    // Auto-fill the storeLink only if they haven't manually typed one yet
     if (storeData.storeLink === "" || storeData.storeLink === currentAutoSlug) {
       const autoSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       setStoreData({ ...storeData, storeName: newName, storeLink: autoSlug });
@@ -143,7 +146,6 @@ const VendorOnboarding = () => {
   const nextStep = () => {
     setError('');
     
-    // Ensure Step 1 is fully filled and link is valid
     if (step === 1) {
       if (!storeData.storeName) return setError("Please enter a Store Name.");
       if (!storeData.storeLink) return setError("Please enter a Custom Store Link.");
@@ -162,7 +164,6 @@ const VendorOnboarding = () => {
   const handleLaunch = async () => {
     setError('');
 
-    // --- NEW: STRICT PRODUCT VALIDATION ---
     if (!productPhoto) return setError("Please upload a product photo.");
     if (!productData.name.trim()) return setError("Please enter a product name.");
     if (!productData.price.trim()) return setError("Please enter a product price.");
@@ -186,7 +187,7 @@ const VendorOnboarding = () => {
       prodFormData.append('name', productData.name);
       prodFormData.append('description', productData.description);
       prodFormData.append('price', productData.price.replace(/,/g, ''));
-      prodFormData.append('stockQuantity', 10); 
+      prodFormData.append('stockQuantity', 1); 
       prodFormData.append('status', "ACTIVE");
       prodFormData.append('category', "");
       if (productPhoto) prodFormData.append('images', productPhoto);
@@ -203,10 +204,11 @@ const VendorOnboarding = () => {
         isOnline: true 
       };
       localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
-      window.dispatchEvent(new Event("storage")); // Instantly update header
+      window.dispatchEvent(new Event("storage")); 
 
-      // 4. Blast off to the dashboard!
-      navigate("/dashboard");
+      // 4. Trigger Success Screen!
+      setIsLoading(false);
+      setIsSuccess(true);
 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to complete setup. Please try again.');
@@ -214,6 +216,55 @@ const VendorOnboarding = () => {
     }
   };
 
+  // ============================================================================
+  // SUCCESS SCREEN RENDER
+  // ============================================================================
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white p-4 text-center overflow-hidden">
+        {/* Confetti Explosion! */}
+        <Confetti 
+          width={window.innerWidth} 
+          height={window.innerHeight} 
+          recycle={false} 
+          numberOfPieces={600} 
+          gravity={0.15}
+        />
+        
+        <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
+          <PartyPopper className="w-12 h-12 text-emerald-600" />
+        </div>
+        
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-4 animate-in slide-in-from-bottom-4 duration-500">
+          Congratulations! 🎉
+        </h1>
+        
+        <p className="text-gray-500 text-base sm:text-lg max-w-md mx-auto mb-8 font-medium animate-in slide-in-from-bottom-6 duration-700">
+          Your store has been successfully created and is <strong className="text-emerald-600">live now!</strong> To finish setting up your store (like customizing your theme or bank details), head to the store settings.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in slide-in-from-bottom-8 duration-1000 delay-300">
+          <button 
+            onClick={() => navigate('/dashboard/settings')}
+            className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <Settings className="w-5 h-5" /> Go to Store Settings
+          </button>
+          
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="w-full sm:w-auto px-8 py-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <LayoutDashboard className="w-5 h-5" /> Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // NORMAL ONBOARDING RENDER
+  // ============================================================================
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
