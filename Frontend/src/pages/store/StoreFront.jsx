@@ -58,16 +58,23 @@ const Storefront = () => {
     fetchStore();
   }, [fallbackStoreLink]); 
 
-  const isPremium = store?.plan === 'starter' || store?.plan === 'growth'; 
-  const isGrowth = store?.plan === 'growth'; 
+  // --- FIXED: CASE INSENSITIVE PLAN CHECK ---
+  const userPlan = store?.plan?.toUpperCase() || "FREE";
+  const isPremium = userPlan === 'STARTER' || userPlan === 'GROWTH'; 
+  const isGrowth = userPlan === 'GROWTH'; 
+  
+  // --- FIXED: COMBINED SLIDESHOW ARRAY ---
+  // We merge your main banner Image with the 3 extra slide images
+  const allSlides = store ? [store.bannerImage, ...(store.slideshowImages || [])].filter(Boolean) : [];
   
   useEffect(() => {
-    if (!isPremium || !store?.enableSlideshow || !store?.slideshowImages?.length) return;
+    // Only run if premium, enabled, AND there is more than 1 image to slide between
+    if (!isPremium || !store?.enableSlideshow || allSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % store.slideshowImages.length);
+      setCurrentSlide((prev) => (prev + 1) % allSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [store, isPremium]);
+  }, [store, isPremium, allSlides.length]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href.split('?')[0]); 
@@ -199,14 +206,15 @@ const Storefront = () => {
         </div>
       </header>
 
-      {/* 2. HERO SECTION (Now conditionally rendered based on store.hasBanner) */}
+      {/* 2. HERO SECTION */}
       {store.hasBanner && (
         <section className="max-w-7xl mx-auto px-4 sm:px-8 mt-6 mb-12 w-full">
           <div className="w-full h-[60vh] sm:h-[70vh] rounded-[2rem] overflow-hidden relative bg-[#EFEFE9] flex items-center shadow-sm">
             
-            {isPremium && store.enableSlideshow && store.slideshowImages?.length > 0 ? (
+            {/* UPDATED SLIDESHOW: Loops through allSlides (Banner + Extra Slides) */}
+            {isPremium && store.enableSlideshow && allSlides.length > 0 ? (
               <>
-                {store.slideshowImages.map((imgUrl, index) => (
+                {allSlides.map((imgUrl, index) => (
                   <img 
                     key={index}
                     src={imgUrl} 
@@ -214,16 +222,18 @@ const Storefront = () => {
                     className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
                   />
                 ))}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
-                  {store.slideshowImages.map((_, index) => (
-                    <button 
-                      key={index} 
-                      onClick={() => setCurrentSlide(index)}
-                      className={`w-2 h-2 rounded-full transition-all ${index === currentSlide ? "w-5" : "bg-white/50"}`}
-                      style={index === currentSlide ? themeStyle : {}}
-                    />
-                  ))}
-                </div>
+                {allSlides.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+                    {allSlides.map((_, index) => (
+                      <button 
+                        key={index} 
+                        onClick={() => setCurrentSlide(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${index === currentSlide ? "w-5" : "bg-white/50"}`}
+                        style={index === currentSlide ? themeStyle : {}}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <img 
@@ -237,11 +247,9 @@ const Storefront = () => {
 
             <div className="relative z-10 px-8 sm:px-16 w-full lg:w-1/2">
                <p className="text-[10px] sm:text-[11px] lg:text-sm font-bold uppercase tracking-[0.15em] mb-4 text-white drop-shadow-md">
-                 {/* Guarding against the literal string "null" */}
                  {store.bannerSubtitle && store.bannerSubtitle !== "null" ? store.bannerSubtitle : "Welcome to Our Store"}
                </p>
                <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal leading-[1.1] mb-8 text-white drop-shadow-lg whitespace-pre-line">
-                 {/* Guarding against the literal string "null" */}
                  {store.bannerTitle && store.bannerTitle !== "null" ? store.bannerTitle : "Discover Quality & Excellence.\nCurated just for you."}
                </h2>
                <div className="flex gap-4">
@@ -375,7 +383,7 @@ const Storefront = () => {
           )}
         </section>
 
-        {/* 5. SECONDARY PROMO BANNER */}
+        {/* 5. SECONDARY PROMO BANNER (NOW CORRECTLY BOUND TO isGrowth) */}
         {isGrowth && store.enableSecondaryBanner && (
           <section className="mb-16 w-full">
             <div className="w-full rounded-3xl overflow-hidden flex flex-col md:flex-row relative shadow-sm" style={themeStyle}>
@@ -405,7 +413,7 @@ const Storefront = () => {
               
               <div className="w-full md:w-1/2 h-64 md:h-auto relative">
                 <img 
-                  src={store.secondaryBannerImage || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"} 
+                  src={store.secondaryBannerImage && store.secondaryBannerImage !== "null" ? store.secondaryBannerImage : "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"} 
                   alt="Promo" 
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -425,7 +433,7 @@ const Storefront = () => {
               
               <div className="md:col-span-5 lg:col-span-4">
                  <div className="flex items-center gap-3 mb-4">
-                    {store.logoUrl ? (
+                    {store.logoUrl && store.logoUrl !== "null" ? (
                       <img src={store.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
                     ) : (
                       <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-extrabold text-lg" style={themeStyle}>
@@ -482,7 +490,7 @@ const Storefront = () => {
                  </div>
 
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    {store.businessAddress && store.showBusinessDetails && (
+                    {store.businessAddress && store.businessAddress !== "null" && store.showBusinessDetails && (
                       <li className="flex items-start gap-3">
                          <MapPin className="w-5 h-5 shrink-0" style={textThemeStyle} />
                          <span>{store.businessAddress}</span>

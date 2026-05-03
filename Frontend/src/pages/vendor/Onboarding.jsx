@@ -28,12 +28,11 @@ const VendorOnboarding = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
-  // Step 3: First Product
+  // Step 3: First Product (Emptied initial state for placeholders)
   const [productData, setProductData] = useState({ 
-    name: "Ankara Print Shirt", 
-    price: "15000", 
-    category: "Fashion & Clothing",
-    description: "A beautiful, premium quality Ankara print shirt perfect for casual outings and special events."
+    name: "", 
+    price: "", 
+    description: ""
   });
   const [productPhoto, setProductPhoto] = useState(null);
   const [productPreview, setProductPreview] = useState(null);
@@ -115,9 +114,14 @@ const VendorOnboarding = () => {
   const handleStoreChange = (e) => setStoreData({ ...storeData, [e.target.name]: e.target.value });
   const handleProductChange = (e) => setProductData({ ...productData, [e.target.name]: e.target.value });
 
+  // --- 2MB FILE RESTRICTION ---
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        return setError("Logo image is too large. Please upload an image under 2MB.");
+      }
+      setError('');
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file)); 
     }
@@ -126,6 +130,10 @@ const VendorOnboarding = () => {
   const handleProductPhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        return setError("Product photo is too large. Please upload an image under 2MB.");
+      }
+      setError('');
       setProductPhoto(file);
       setProductPreview(URL.createObjectURL(file));
     }
@@ -152,33 +160,38 @@ const VendorOnboarding = () => {
 
   // --- FINAL SUBMISSION ---
   const handleLaunch = async () => {
-    setIsLoading(true);
     setError('');
+
+    // --- NEW: STRICT PRODUCT VALIDATION ---
+    if (!productPhoto) return setError("Please upload a product photo.");
+    if (!productData.name.trim()) return setError("Please enter a product name.");
+    if (!productData.price.trim()) return setError("Please enter a product price.");
+    if (!productData.description.trim()) return setError("Please enter a product description.");
+
+    setIsLoading(true);
 
     try {
       // 1. Submit Store Data
       const storeFormData = new FormData();
       storeFormData.append('storeName', storeData.storeName);
-      storeFormData.append('storeLink', storeData.storeLink); // Send verified link
-      storeFormData.append('storeType', selectedStoreType.name);
+      storeFormData.append('storeLink', storeData.storeLink); 
+      storeFormData.append('storeCategory', selectedStoreType.name);
       storeFormData.append('storeDescription', storeData.storeDescription);
       if (logoFile) storeFormData.append('logo', logoFile);
 
       const storeRes = await api.put('/vendors/onboarding', storeFormData);
 
-      // 2. Submit Product Data 
-      if (productData.name) {
-        const prodFormData = new FormData();
-        prodFormData.append('name', productData.name);
-        prodFormData.append('description', productData.description);
-        prodFormData.append('price', productData.price.replace(/,/g, ''));
-        prodFormData.append('category', productData.category);
-        prodFormData.append('stockQuantity', 10); 
-        prodFormData.append('status', "ACTIVE");
-        if (productPhoto) prodFormData.append('images', productPhoto);
+      // 2. Submit Product Data
+      const prodFormData = new FormData();
+      prodFormData.append('name', productData.name);
+      prodFormData.append('description', productData.description);
+      prodFormData.append('price', productData.price.replace(/,/g, ''));
+      prodFormData.append('stockQuantity', 10); 
+      prodFormData.append('status', "ACTIVE");
+      prodFormData.append('category', "");
+      if (productPhoto) prodFormData.append('images', productPhoto);
 
-        await api.post('/products', prodFormData);
-      }
+      await api.post('/products', prodFormData);
 
       // 3. Update localStorage
       const currentVendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
@@ -265,7 +278,7 @@ const VendorOnboarding = () => {
                              type="text" 
                              name="storeName"
                              value={storeData.storeName}
-                             onChange={handleNameChange} // Using the new auto-slug handler
+                             onChange={handleNameChange}
                              placeholder="e.g. Zara Stitches & Fashion" 
                              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
                            />
@@ -288,7 +301,6 @@ const VendorOnboarding = () => {
                                 placeholder="zara-stitches" 
                                 className="w-full pl-3 pr-10 py-4 bg-transparent focus:outline-none font-bold text-gray-900 text-sm sm:text-base" 
                               />
-                              {/* Validation Status Icons */}
                               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                  {linkStatus === "checking" && <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />}
                                  {linkStatus === "available" && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
@@ -296,8 +308,6 @@ const VendorOnboarding = () => {
                               </div>
                            </div>
                         </div>
-                        
-                        {/* Validation Message */}
                         <div className="mt-2 h-4">
                            {linkStatus === "available" && <p className="text-xs font-bold text-emerald-600">{linkMessage}</p>}
                            {linkStatus === "unavailable" && <p className="text-xs font-bold text-red-500">{linkMessage}</p>}
@@ -324,7 +334,6 @@ const VendorOnboarding = () => {
                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
-                        {/* Floating Dropdown Menu */}
                         {isTypeDropdownOpen && (
                           <div className="absolute top-[105%] left-0 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                              <div className="max-h-64 overflow-y-auto hide-scrollbar py-2">
@@ -398,17 +407,17 @@ const VendorOnboarding = () => {
                            )}
                            
                            <div className="flex flex-col items-center sm:items-start relative z-10">
-                              <div className="flex items-center justify-center gap-2 bg-white px-5 py-3 rounded-full border border-emerald-100 shadow-sm mb-3">
+                              <div className="flex items-center justify-center gap-2 bg-white px-5 py-3 rounded-full border border-emerald-100 shadow-sm mb-3 group-hover:bg-gray-50 transition-colors">
                                  <Upload className="w-5 h-5 text-[#044e3b]" />
                                  <span className="text-sm font-bold text-gray-900">{logoFile ? "Change Logo" : "Tap to upload logo"}</span>
                               </div>
-                              <p className="text-[11px] font-medium text-gray-500">PNG, JPG up to 2MB</p>
+                              <p className="text-[11px] font-medium text-gray-500">PNG, JPG strictly up to 2MB</p>
                            </div>
                         </label>
                      </div>
 
                      {/* Tips Card */}
-                     <div className="lg:col-span-5 bg-[#F8FAFC] rounded-3xl p-6 sm:p-8 lg:h-full flex flex-col justify-center">
+                     <div className="lg:col-span-5 bg-[#F8FAFC] rounded-3xl p-6 sm:p-8 lg:h-full flex flex-col justify-center border border-gray-100 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                            <Lightbulb className="w-5 h-5 text-yellow-500" />
                            <h4 className="text-base font-bold text-gray-900">Tips for a great logo:</h4>
@@ -420,7 +429,7 @@ const VendorOnboarding = () => {
                            </li>
                            <li className="flex items-start gap-3 text-sm font-bold text-gray-600">
                               <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" /> 
-                              <span>Square or circular sizes work best across the platform.</span>
+                              <span>Keep file sizes under 2MB for fast loading times.</span>
                            </li>
                         </ul>
                      </div>
@@ -429,7 +438,7 @@ const VendorOnboarding = () => {
                </div>
              )}
 
-             {/* STEP 3: ADD PRODUCT */}
+             {/* STEP 3: ADD PRODUCT & PREVIEW */}
              {step === 3 && (
                <div className="animate-in slide-in-from-right-4 fade-in duration-300">
                   <div className="mb-8">
@@ -437,104 +446,132 @@ const VendorOnboarding = () => {
                      <p className="text-sm sm:text-base font-medium text-gray-500">Let's add one product to get your store ready for customers.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12">
                      
-                     {/* Product Photo */}
-                     <div className="lg:col-span-2">
-                        <label className="block text-sm font-bold text-gray-900 mb-3">Product Photo</label>
-                        <div className="flex flex-wrap gap-4">
-                           <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-5xl shrink-0 overflow-hidden shadow-sm">
-                              👕
+                     {/* LEFT COLUMN: Input Form */}
+                     <div className="xl:col-span-7 space-y-6">
+                        
+                        {/* Product Photo */}
+                        <div>
+                           <label className="block text-sm font-bold text-gray-900 mb-3">Product Photo (Max 2MB)</label>
+                           <div className="flex flex-wrap gap-4">
+                              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-5xl shrink-0 overflow-hidden shadow-sm">
+                                 👕
+                              </div>
+                              <label className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-2 transition-colors shrink-0 cursor-pointer overflow-hidden relative group">
+                                 <input type="file" accept="image/*" className="hidden" onChange={handleProductPhotoChange} />
+                                 {productPreview ? (
+                                   <img src={productPreview} alt="Product Preview" className="w-full h-full object-cover" />
+                                 ) : (
+                                   <>
+                                     <ImageIcon className="w-8 h-8 text-emerald-700 group-hover:scale-110 transition-transform" />
+                                     <span className="text-xs font-bold text-emerald-800">Add Photo</span>
+                                   </>
+                                 )}
+                              </label>
                            </div>
-                           <label className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-2 transition-colors shrink-0 cursor-pointer overflow-hidden relative">
-                              <input type="file" accept="image/*" className="hidden" onChange={handleProductPhotoChange} />
-                              {productPreview ? (
-                                <img src={productPreview} alt="Product Preview" className="w-full h-full object-cover" />
-                              ) : (
-                                <>
-                                  <ImageIcon className="w-8 h-8 text-emerald-700" />
-                                  <span className="text-xs font-bold text-emerald-800">Add Photo</span>
-                                </>
-                              )}
-                           </label>
                         </div>
-                     </div>
 
-                     {/* Product Name */}
-                     <div className="lg:col-span-2">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Product Name</label>
-                        <div className="relative">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                              <Tag className="w-5 h-5 text-gray-400" />
-                           </div>
-                           <input 
-                             type="text" 
-                             name="name"
-                             value={productData.name}
-                             onChange={handleProductChange}
-                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
-                           />
-                        </div>
-                     </div>
-
-                     {/* Price */}
-                     <div className="lg:col-span-1">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Price (₦)</label>
-                        <div className="relative">
-                           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                              <span className="font-extrabold text-gray-900 text-base">₦</span>
-                           </div>
-                           <input 
-                             type="text" 
-                             name="price"
-                             value={productData.price}
-                             onChange={handleProductChange}
-                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
-                           />
-                        </div>
-                     </div>
-
-                     {/* Category */}
-                     <div className="lg:col-span-1">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Category</label>
-                        <div className="relative">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                              <div className="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center">
-                                 <span className="text-xs">🏷️</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                           {/* Product Name */}
+                           <div className="sm:col-span-1">
+                              <label className="block text-sm font-bold text-gray-900 mb-2">Product Name</label>
+                              <div className="relative">
+                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Tag className="w-5 h-5 text-gray-400" />
+                                 </div>
+                                 <input 
+                                   type="text" 
+                                   name="name"
+                                   value={productData.name}
+                                   onChange={handleProductChange}
+                                   placeholder="e.g. Ankara Print Shirt"
+                                   className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
+                                 />
                               </div>
                            </div>
-                           <select 
-                             name="category"
-                             value={productData.category}
-                             onChange={handleProductChange}
-                             className="w-full pl-12 pr-10 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 appearance-none text-sm sm:text-base"
-                           >
-                              <option>Fashion & Clothing</option>
-                              <option>Electronics</option>
-                              <option>Health & Beauty</option>
-                              <option>Home & Office</option>
-                           </select>
-                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                              <ChevronDown className="w-5 h-5 text-gray-400" />
+
+                           {/* Price */}
+                           <div className="sm:col-span-1">
+                              <label className="block text-sm font-bold text-gray-900 mb-2">Price (₦)</label>
+                              <div className="relative">
+                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                    <span className="font-extrabold text-gray-900 text-base">₦</span>
+                                 </div>
+                                 <input 
+                                   type="text" 
+                                   name="price"
+                                   value={productData.price}
+                                   onChange={handleProductChange}
+                                   placeholder="e.g. 15000"
+                                   className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-gray-900 text-sm sm:text-base" 
+                                 />
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Product Description */}
+                        <div>
+                           <label className="block text-sm font-bold text-gray-900 mb-2">Product Description</label>
+                           <div className="relative">
+                              <div className="absolute top-4 left-4 flex items-center pointer-events-none">
+                                 <AlignLeft className="w-5 h-5 text-gray-400" />
+                              </div>
+                              <textarea 
+                                rows="3"
+                                name="description"
+                                value={productData.description}
+                                onChange={handleProductChange}
+                                placeholder="e.g. A beautiful, premium quality Ankara print shirt perfect for casual outings and special events."
+                                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-700 text-sm sm:text-base resize-none leading-relaxed"
+                              ></textarea>
                            </div>
                         </div>
                      </div>
 
-                     {/* Product Description */}
-                     <div className="lg:col-span-2">
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Product Description</label>
-                        <div className="relative">
-                           <div className="absolute top-4 left-4 flex items-center pointer-events-none">
-                              <AlignLeft className="w-5 h-5 text-gray-400" />
+                     {/* RIGHT COLUMN: Live Summary & Info */}
+                     <div className="xl:col-span-5 flex flex-col gap-6">
+                        
+                        {/* Info Box */}
+                        <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex flex-col gap-3 shadow-sm">
+                           <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                <Lightbulb className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <h4 className="font-extrabold text-blue-900 text-base">Quick Add Setup</h4>
                            </div>
-                           <textarea 
-                             rows="3"
-                             name="description"
-                             value={productData.description}
-                             onChange={handleProductChange}
-                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-700 text-sm sm:text-base resize-none leading-relaxed"
-                           ></textarea>
+                           <p className="text-sm font-medium text-blue-800/90 leading-relaxed">
+                             This is a quick setup to get your first product online immediately. Once you launch your store, you can head to the <strong>Products</strong> tab in your dashboard to add multiple images, categorize your items, set up variants, and track inventory!
+                           </p>
                         </div>
+
+                        {/* Live Preview Card */}
+                        <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-md">
+                           <div className="flex items-center justify-between mb-4">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</p>
+                              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                           </div>
+                           
+                           <div className="flex items-center gap-4">
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#F5F2ED] border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                 {productPreview ? (
+                                    <img src={productPreview} alt="Preview" className="w-full h-full object-cover" />
+                                 ) : (
+                                    <ImageIcon className="w-6 h-6 text-gray-300" />
+                                 )}
+                              </div>
+                              <div className="flex-1">
+                                 <h4 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1">{productData.name || "Product Name"}</h4>
+                                 <p className="font-extrabold text-emerald-700 text-sm mt-0.5">
+                                    ₦{productData.price ? Number(productData.price.replace(/,/g, '')).toLocaleString() : "0"}
+                                 </p>
+                                 <p className="text-[11px] sm:text-xs font-medium text-gray-500 mt-1 line-clamp-2 leading-tight">
+                                    {productData.description || "Your product description will appear here..."}
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+
                      </div>
                   </div>
                </div>

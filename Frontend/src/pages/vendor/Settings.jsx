@@ -10,6 +10,7 @@ import {
 import FB from "../../assets/social icons/facebook.svg";
 import IG from "../../assets/social icons/instagram.svg";
 import X from "../../assets/social icons/x.svg";
+import TT from "../../assets/social icons/tiktok.svg";
 import api from '../../utils/api';
 
 const Settings = () => {
@@ -625,7 +626,7 @@ const Settings = () => {
 
                     {/* TikTok */}
                     <div className="relative">
-                      <div className="absolute left-4 top-3.5 font-bold text-gray-800 text-[10px] bg-gray-200 px-1 py-0.5 rounded">TT</div>
+                      <img src={TT} alt="TikTok" className="absolute left-4 top-3.5 w-5 h-5" />
                       <input type="text" name="tiktok" value={formData.tiktok} onChange={handleChange} placeholder="TikTok Handle" className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-medium text-gray-900" />
                     </div>
 
