@@ -118,6 +118,24 @@ const VendorLayout = () => {
     navigate('/login', { replace: true });
   };
 
+  // const navigate = useNavigate(); 
+  
+  useEffect(() => {
+  const syncTabs = (event) => {
+    // If the storage event was triggered by our token changing in another tab
+    if (event.key === 'sabisell_token') {
+      // If the token was removed (they logged out in another tab) or changed (they logged into a different account), redirect to login
+      if (!event.newValue || event.newValue !== event.oldValue) {
+        navigate('/login', { replace: true });
+      }
+    }
+  };
+
+  window.addEventListener('storage', syncTabs);
+  return () => window.removeEventListener('storage', syncTabs);
+}, [navigate]);
+
+
   // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [

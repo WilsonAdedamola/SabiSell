@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, useNavigate } from 'react-router-dom';
 
 // 1. LAYOUTS
 import VendorLayout from './layouts/VendorLayout';
@@ -36,6 +36,7 @@ import OrderSuccess from './pages/store/OrderSuccess';
 
 // 6. SYSTEM PAGES
 import NotFound from './pages/errors/NotFound';
+import { useEffect } from 'react';
 
 // ==========================================
 // ROUTER 1: MAIN SAAS APP 
@@ -103,6 +104,7 @@ const storeRouter = createBrowserRouter([
 ]);
 
 const App = () => {
+  
   const hostname = window.location.hostname;
   const mainDomains = ['localhost', '127.0.0.1', 'sabisell.vercel.app', 'www.sabisell.vercel.app', 'sabisell.com', 'www.sabisell.com'];
   const isSubdomain = !mainDomains.includes(hostname);

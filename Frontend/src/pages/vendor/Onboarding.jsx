@@ -1,17 +1,30 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Confetti from 'react-confetti'
+import { useNavigate, Link } from "react-router-dom";
+import Confetti from 'react-confetti'; 
 import { 
   Store, Upload, Camera, CheckCircle2, XCircle,
   ArrowLeft, Lightbulb, Tag, Image as ImageIcon,
   LayoutDashboard, ShoppingCart, AlignLeft, ChevronDown, 
   ArrowRight, Rocket, Loader2, AlertCircle, 
-  PartyPopper, Settings // <-- NEW: Added PartyPopper and Settings icons
+  PartyPopper, Settings 
 } from "lucide-react";
 import api from '../../utils/api';
 
 const VendorOnboarding = () => {
   const navigate = useNavigate();
+  
+  // --- NEW: GUARD AGAINST ALREADY ONBOARDED USERS ---
+  useEffect(() => {
+    const checkOnboardingStatus = () => {
+      const vendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
+      // If they already have a storeLink, kick them directly to the dashboard
+      if (vendorData.storeLink && vendorData.isOnline) {
+        navigate('/dashboard', { replace: true });
+      }
+    };
+    checkOnboardingStatus();
+  }, [navigate]);
+
   const [step, setStep] = useState(1);
   
   // Custom Dropdown State for Step 1
@@ -43,7 +56,7 @@ const VendorOnboarding = () => {
   // Submission & Success State
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false); // <-- NEW: Success Screen State
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const storeTypes = [
     { id: "fashion", name: "Fashion & Clothing", icon: "👗" },
@@ -210,6 +223,9 @@ const VendorOnboarding = () => {
       setIsLoading(false);
       setIsSuccess(true);
 
+      // We no longer automatically navigate here! 
+      // The user must click the buttons on the Success Screen.
+
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to complete setup. Please try again.');
       setIsLoading(false);
@@ -244,15 +260,18 @@ const VendorOnboarding = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in slide-in-from-bottom-8 duration-1000 delay-300">
+          
+          {/* --- FIXED: Added replace: true to obliterate the back history --- */}
           <button 
-            onClick={() => navigate('/dashboard/settings')}
+            onClick={() => navigate('/dashboard/settings', { replace: true })}
             className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Settings className="w-5 h-5" /> Go to Store Settings
           </button>
           
+          {/* --- FIXED: Added replace: true to obliterate the back history --- */}
           <button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/dashboard', { replace: true })}
             className="w-full sm:w-auto px-8 py-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <LayoutDashboard className="w-5 h-5" /> Go to Dashboard
