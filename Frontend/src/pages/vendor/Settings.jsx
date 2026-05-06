@@ -5,7 +5,7 @@ import {
   ChevronDown, Check, Plus, ChevronRight, Settings as SettingsIcon,
   Loader2, Save, AlertCircle, CheckCircle2, Lock, Star,
   MessageCircle, Mail, Image as ImageIcon,
-  ExternalLink, Camera, Landmark, Wallet, Globe, XCircle, Eye, ArrowLeft, RefreshCw, Trash2
+  ExternalLink, Camera, Landmark, Wallet, Globe, XCircle, Eye, ArrowLeft, RefreshCw, Trash2, Info
 } from "lucide-react";
 import FB from "../../assets/social icons/facebook.svg";
 import IG from "../../assets/social icons/instagram.svg";
@@ -35,7 +35,7 @@ const Settings = () => {
   const secondaryBannerRef = useRef(null);
 
   const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
- const [currentPlan, setCurrentPlan] = useState(vendor.plan || "FREE");
+  const [currentPlan, setCurrentPlan] = useState(vendor.plan || "FREE");
   
   const canEditBanner = currentPlan === "STARTER" || currentPlan === "GROWTH";
   const canUseSlideshow = currentPlan === "STARTER" || currentPlan === "GROWTH";
@@ -108,7 +108,7 @@ const Settings = () => {
     { id: "contact", icon: Phone, title: "Contact & Social", desc: "WhatsApp, Instagram", color: "text-blue-600 bg-blue-50", border: "hover:border-blue-200" },
     { id: "business", icon: Building2, title: "Business Details", desc: "Legal name, address", color: "text-gray-600 bg-gray-100", border: "hover:border-gray-300" },
     { id: "payments", icon: CreditCard, title: "Payment Methods", desc: "Bank details, Paystack", color: "text-orange-600 bg-orange-50", border: "hover:border-orange-200" },
-    { id: "delivery", icon: Truck, title: "Delivery & Shipping", desc: "Coming soon", color: "text-indigo-600 bg-indigo-50", border: "hover:border-indigo-200" },
+    { id: "delivery", icon: Truck, title: "Delivery & Shipping", desc: "How you fulfill orders", color: "text-indigo-600 bg-indigo-50", border: "hover:border-indigo-200" },
   ];
 
   useEffect(() => {
@@ -119,7 +119,7 @@ const Settings = () => {
 
         setCurrentPlan(data.plan || "FREE"); 
         
-        // 2. Silently update local storage so it stays perfectly synced with the DB
+        // Silently update local storage so it stays perfectly synced with the DB
         localStorage.setItem('sabisell_vendor', JSON.stringify({ ...vendor, ...data }));
         
         // Helper function to prevent literal "null" strings
@@ -263,20 +263,18 @@ const Settings = () => {
     }
   };
 
-  // --- NEW: Function to auto-save Store Online/Offline status ---
+  // Toggle Store Online/Offline status
   const handleToggleStoreStatus = async () => {
     const newState = !isStoreOnline;
-    setIsStoreOnline(newState); // Optimistic UI update
+    setIsStoreOnline(newState); 
 
     try {
       const data = new FormData();
-      // We must append all existing formData so the backend doesn't overwrite it
       Object.keys(formData).forEach(key => data.append(key, formData[key]));
       data.append("isOnline", newState);
 
       const response = await api.put('/vendors/settings', data);
       
-      // Update local storage
       const updatedVendor = { ...vendor, ...response.data.vendor };
       localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
       
@@ -546,7 +544,7 @@ const Settings = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              )}   
 
               {/* 2. CONTACT & SOCIAL */}
               {activeView === "contact" && (
@@ -700,8 +698,8 @@ const Settings = () => {
                           </button>
                         ))}
                         <div className="flex items-center gap-2 border border-gray-200 rounded-full px-3 py-1 bg-gray-50 sm:ml-2 shadow-sm mt-2 sm:mt-0">
-                           <span className="text-xs font-bold text-gray-500">HEX:</span>
-                           <input type="text" name="themeColor" value={formData.themeColor} onChange={handleChange} className="w-16 bg-transparent text-xs font-bold text-gray-900 focus:outline-none uppercase" />
+                          <span className="text-xs font-bold text-gray-500">HEX:</span>
+                          <input type="text" name="themeColor" value={formData.themeColor} onChange={handleChange} className="w-16 bg-transparent text-xs font-bold text-gray-900 focus:outline-none uppercase" />
                         </div>
                       </div>
                     </div>
@@ -724,12 +722,12 @@ const Settings = () => {
 
                     {!canEditBanner && (
                       <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-start gap-3">
-                         <Lock className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                         <div>
-                           <p className="text-sm font-bold text-yellow-800">Upgrade to Customize</p>
-                           <p className="text-xs font-medium text-yellow-700 mt-1 mb-2">Free users can toggle the default banner on or off. Upgrade to Starter to add your own custom text and images.</p>
-                           <Link to="/dashboard/billing" className="text-[11px] bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm w-fit block">Upgrade Plan</Link>
-                         </div>
+                        <Lock className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-yellow-800">Upgrade to Customize</p>
+                          <p className="text-xs font-medium text-yellow-700 mt-1 mb-2">Free users can toggle the default banner on or off. Upgrade to Starter to add your own custom text and images.</p>
+                          <Link to="/dashboard/billing" className="text-[11px] bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm w-fit block">Upgrade Plan</Link>
+                        </div>
                       </div>
                     )}
 
@@ -741,14 +739,14 @@ const Settings = () => {
                         <input type="file" accept="image/*" ref={bannerInputRef} onChange={(e) => handleImageChange(e, "banner")} className="hidden" disabled={!canEditBanner}/>
                         
                         {bannerPreview ? (
-                           <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
+                          <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
                               <img src={bannerPreview} alt="Banner" className="w-full h-full object-cover" />
                               {canEditBanner && (
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                   <button type="button" onClick={() => bannerInputRef.current?.click()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg">Change Image</button>
                                 </div>
                               )}
-                           </div>
+                          </div>
                         ) : (
                           <button type="button" onClick={() => bannerInputRef.current?.click()} disabled={!canEditBanner} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1 transition-colors">
                             <ImageIcon className="w-5 h-5 text-gray-400" />
@@ -776,82 +774,82 @@ const Settings = () => {
 
                     {/* HERO SLIDESHOW (Locked for Free) */}
                     <div className="mt-8 pt-8 border-t border-gray-200 relative">
-                       {!canUseSlideshow && (
-                         <div className="absolute inset-0 z-10 bg-gray-50/50 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-2xl border border-gray-100">
+                      {!canUseSlideshow && (
+                        <div className="absolute inset-0 z-10 bg-gray-50/50 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-2xl border border-gray-100">
                             <Lock className="w-6 h-6 text-gray-400 mb-2" />
                             <p className="text-xs font-bold text-gray-700">Slideshow requires Starter Plan</p>
-                         </div>
-                       )}
+                        </div>
+                      )}
 
-                       <div className={`flex items-center justify-between mb-4 ${!canUseSlideshow ? 'opacity-40' : ''}`}>
-                         <div>
-                           <h4 className="text-sm font-bold text-gray-900">Enable Slideshow</h4>
-                           <p className="text-xs font-medium text-gray-500 mt-0.5">Add up to 3 extra images to rotate in the hero section.</p>
-                         </div>
-                         <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.enableSlideshow ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => canUseSlideshow && setFormData({ ...formData, enableSlideshow: !formData.enableSlideshow })}>
-                           <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.enableSlideshow ? "translate-x-6" : "translate-x-0"}`}></div>
-                         </div>
-                       </div>
+                      <div className={`flex items-center justify-between mb-4 ${!canUseSlideshow ? 'opacity-40' : ''}`}>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">Enable Slideshow</h4>
+                          <p className="text-xs font-medium text-gray-500 mt-0.5">Add up to 3 extra images to rotate in the hero section.</p>
+                        </div>
+                        <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${formData.enableSlideshow ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={() => canUseSlideshow && setFormData({ ...formData, enableSlideshow: !formData.enableSlideshow })}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${formData.enableSlideshow ? "translate-x-6" : "translate-x-0"}`}></div>
+                        </div>
+                      </div>
 
-                       {formData.enableSlideshow && (
-                         <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${!canUseSlideshow ? 'opacity-40 pointer-events-none' : ''}`}>
-                           
-                           {/* Slide 1 */}
-                           <div>
+                      {formData.enableSlideshow && (
+                        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${!canUseSlideshow ? 'opacity-40 pointer-events-none' : ''}`}>
+                          
+                          {/* Slide 1 */}
+                          <div>
                               <input type="file" accept="image/*" ref={slide1Ref} onChange={(e) => handleImageChange(e, "slide1")} className="hidden" />
                               {slide1Preview ? (
                                 <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
-                                   <img src={slide1Preview} alt="Slide 1" className="w-full h-full object-cover" />
-                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <img src={slide1Preview} alt="Slide 1" className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                       <button type="button" onClick={() => slide1Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
-                                   </div>
+                                  </div>
                                 </div>
                               ) : (
                                 <button type="button" onClick={() => slide1Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
-                                   <Plus className="w-5 h-5 text-gray-400" />
-                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 2</span>
+                                  <Plus className="w-5 h-5 text-gray-400" />
+                                  <span className="text-[10px] font-bold text-gray-500">Add Slide 2</span>
                                 </button>
                               )}
-                           </div>
-                           
-                           {/* Slide 2 */}
-                           <div>
+                          </div>
+                          
+                          {/* Slide 2 */}
+                          <div>
                               <input type="file" accept="image/*" ref={slide2Ref} onChange={(e) => handleImageChange(e, "slide2")} className="hidden" />
                               {slide2Preview ? (
                                 <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
-                                   <img src={slide2Preview} alt="Slide 2" className="w-full h-full object-cover" />
-                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <img src={slide2Preview} alt="Slide 2" className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                       <button type="button" onClick={() => slide2Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
-                                   </div>
+                                  </div>
                                 </div>
                               ) : (
                                 <button type="button" onClick={() => slide2Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
-                                   <Plus className="w-5 h-5 text-gray-400" />
-                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 3</span>
+                                  <Plus className="w-5 h-5 text-gray-400" />
+                                  <span className="text-[10px] font-bold text-gray-500">Add Slide 3</span>
                                 </button>
                               )}
-                           </div>
+                          </div>
 
-                           {/* Slide 3 */}
-                           <div>
+                          {/* Slide 3 */}
+                          <div>
                               <input type="file" accept="image/*" ref={slide3Ref} onChange={(e) => handleImageChange(e, "slide3")} className="hidden" />
                               {slide3Preview ? (
                                 <div className="relative h-24 rounded-xl overflow-hidden group border border-gray-200">
-                                   <img src={slide3Preview} alt="Slide 3" className="w-full h-full object-cover" />
-                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <img src={slide3Preview} alt="Slide 3" className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                       <button type="button" onClick={() => slide3Ref.current?.click()} className="text-[10px] font-bold bg-white text-gray-900 px-3 py-1.5 rounded-lg">Change</button>
-                                   </div>
+                                  </div>
                                 </div>
                               ) : (
                                 <button type="button" onClick={() => slide3Ref.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1">
-                                   <Plus className="w-5 h-5 text-gray-400" />
-                                   <span className="text-[10px] font-bold text-gray-500">Add Slide 4</span>
+                                  <Plus className="w-5 h-5 text-gray-400" />
+                                  <span className="text-[10px] font-bold text-gray-500">Add Slide 4</span>
                                 </button>
                               )}
-                           </div>
+                          </div>
 
-                         </div>
-                       )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -886,34 +884,34 @@ const Settings = () => {
                       </div>
 
                       <div className="space-y-5">
-                         <div>
+                        <div>
                             <label className="block text-xs font-bold text-gray-700 mb-2">Banner Image</label>
                             <input type="file" accept="image/*" ref={secondaryBannerRef} onChange={(e) => handleImageChange(e, "secondaryBanner")} className="hidden" />
                             
                             {secondaryBannerPreview ? (
-                               <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
+                              <div className="relative w-full h-32 rounded-xl overflow-hidden group border border-gray-200 shadow-sm">
                                   <img src={secondaryBannerPreview} alt="Secondary Banner" className="w-full h-full object-cover" />
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <button type="button" onClick={() => secondaryBannerRef.current?.click()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg">Change Image</button>
                                   </div>
-                               </div>
+                              </div>
                             ) : (
                               <button type="button" onClick={() => secondaryBannerRef.current?.click()} className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 flex flex-col items-center justify-center gap-1 transition-colors">
                                 <ImageIcon className="w-5 h-5 text-gray-400" />
                                 <span className="text-xs font-bold text-gray-500">Upload Banner Image</span>
                               </button>
                             )}
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Banner Title</label>
-                            <input type="text" name="secondaryBannerTitle" value={formData.secondaryBannerTitle} onChange={handleChange} placeholder="Look Good. Feel Unstoppable." className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-gray-900 text-sm" />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-2">Description Text</label>
-                            <textarea rows="2" name="secondaryBannerDesc" value={formData.secondaryBannerDesc} onChange={handleChange} placeholder="Explore premium styles made to make you stand out." className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-[#044e3b] transition-all font-medium text-gray-700 text-sm resize-none"></textarea>
-                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Banner Title</label>
+                          <input type="text" name="secondaryBannerTitle" value={formData.secondaryBannerTitle} onChange={handleChange} placeholder="Look Good. Feel Unstoppable." className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:border-[#044e3b] font-bold text-gray-900 text-sm" />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Description Text</label>
+                          <textarea rows="2" name="secondaryBannerDesc" value={formData.secondaryBannerDesc} onChange={handleChange} placeholder="Explore premium styles made to make you stand out." className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-[#044e3b] transition-all font-medium text-gray-700 text-sm resize-none"></textarea>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1005,32 +1003,44 @@ const Settings = () => {
                   </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                     <div className="flex items-center gap-4">
-                       <div className="w-14 h-14 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center shrink-0">
-                         <Wallet className="w-7 h-7 text-blue-600" />
-                       </div>
-                       <div>
-                         <h4 className="text-base font-bold text-gray-900">Accept Online Payments</h4>
-                         <p className="text-xs font-medium text-gray-500 mt-0.5">Let customers pay securely via Paystack.</p>
-                       </div>
-                     </div>
-                     <button type="button" className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm transition-colors whitespace-nowrap w-full sm:w-auto">
-                       Connect Paystack
-                     </button>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center shrink-0">
+                        <Wallet className="w-7 h-7 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-gray-900">Accept Online Payments</h4>
+                        <p className="text-xs font-medium text-gray-500 mt-0.5">Let customers pay securely via Paystack.</p>
+                      </div>
+                    </div>
+                    <button type="button" className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm transition-colors whitespace-nowrap w-full sm:w-auto">
+                      Connect Paystack
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* 6. DELIVERY & SHIPPING (COMING SOON) */}
+              {/* 6. DELIVERY & SHIPPING */}
               {activeView === "delivery" && (
                 <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4 animate-in fade-in duration-300">
-                  <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                    <Truck className="w-8 h-8 text-indigo-500" />
+                  <div className="w-20 h-20 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                    <Truck className="w-10 h-10 text-indigo-500" />
                   </div>
-                  <h3 className="text-xl font-extrabold text-gray-900 mb-2">Delivery Settings</h3>
-                  <p className="text-sm font-medium text-gray-500 max-w-xs leading-relaxed">
-                    Advanced delivery zones, custom shipping rates, and logistics integrations are coming very soon.
-                  </p>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Delivery & Shipping</h3>
+                  <div className="bg-indigo-50/50 border border-indigo-100 p-6 rounded-3xl max-w-lg text-left">
+                     <h4 className="font-bold text-indigo-900 mb-2 text-sm flex items-center gap-2">
+                       <span className="flex w-2 h-2 rounded-full bg-indigo-500"></span> How it works right now
+                     </h4>
+                     <p className="text-sm font-medium text-indigo-800/80 leading-relaxed mb-4">
+                       Currently, delivery is handled manually. At checkout, buyers select <strong>"Pay Delivery Later"</strong>. You will receive their location details with the order and contact them to agree on a delivery fee.
+                     </p>
+                     
+                     <h4 className="font-bold text-indigo-900 mb-2 text-sm flex items-center gap-2 pt-4 border-t border-indigo-100/50">
+                       <span className="flex w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Coming Very Soon
+                     </h4>
+                     <p className="text-sm font-medium text-indigo-800/80 leading-relaxed">
+                       We are integrating directly with top logistics companies! Soon, delivery fees will be <strong>automatically calculated</strong> at checkout based on the buyer's exact location and your store's origin.
+                     </p>
+                  </div>
                 </div>
               )}
 

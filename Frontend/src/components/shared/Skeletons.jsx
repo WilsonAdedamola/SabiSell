@@ -365,6 +365,105 @@ export const AddEditProductSkeleton = () => {
   );
 };
 
+// Add this to your Skeleton.jsx file
+export const ProductDetailsSkeleton = () => {
+  return (
+    <div className="min-h-screen bg-[#FDFDFB] font-sans pb-16">
+      
+      {/* HEADER SKELETON */}
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-50 pt-4 pb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 animate-pulse"></div>
+            <div className="h-6 w-32 sm:w-48 bg-gray-200 rounded-md animate-pulse"></div>
+          </div>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 animate-pulse"></div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        
+        {/* Back Button Skeleton */}
+        <div className="h-5 w-16 bg-gray-200 rounded animate-pulse mb-6"></div>
+
+        {/* Breadcrumbs Skeleton */}
+        <div className="h-4 w-48 sm:w-64 bg-gray-200 rounded animate-pulse mb-6 sm:mb-8"></div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+          
+          {/* LEFT COLUMN: IMAGE GALLERY SKELETON */}
+          <div className="lg:col-span-7 flex flex-col gap-4">
+            {/* Main Image */}
+            <div className="w-full aspect-[4/5] sm:aspect-[3/4] lg:aspect-square bg-gray-200 rounded-3xl animate-pulse border border-gray-100"></div>
+
+            {/* Thumbnail Gallery */}
+            <div className="flex items-center gap-3 overflow-hidden pb-2">
+              {[1, 2, 3].map((idx) => (
+                <div 
+                  key={idx}
+                  className="w-20 h-24 sm:w-24 sm:h-28 shrink-0 rounded-2xl bg-gray-200 animate-pulse"
+                ></div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: PRODUCT DETAILS SKELETON */}
+          <div className="lg:col-span-5 flex flex-col lg:py-4">
+            
+            {/* Title & Price */}
+            <div className="mb-6 space-y-4">
+              <div className="h-8 sm:h-10 w-3/4 bg-gray-200 rounded-xl animate-pulse"></div>
+              <div className="h-8 sm:h-10 w-1/2 bg-gray-200 rounded-xl animate-pulse"></div>
+              
+              <div className="pt-2">
+                <div className="h-10 w-1/3 bg-gray-200 rounded-xl animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="mb-8 space-y-3">
+              <div className="h-3.5 w-full bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-3.5 w-full bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-3.5 w-5/6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-3.5 w-4/6 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+
+            <div className="w-full h-px bg-gray-100 mb-8"></div>
+
+            {/* Quantity Selector Skeleton */}
+            <div className="space-y-6 mb-8">
+              <div>
+                <div className="h-4 w-16 bg-gray-200 rounded mb-3 animate-pulse"></div>
+                <div className="h-12 w-32 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Action Buttons Skeleton */}
+            <div className="mb-8">
+              <div className="h-14 w-full bg-gray-200 rounded-2xl animate-pulse"></div>
+            </div>
+
+            {/* Trust Badges Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-gray-100">
+              {[1, 2].map((idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded bg-gray-200 shrink-0 animate-pulse"></div>
+                  <div className="space-y-2 flex-1 pt-0.5">
+                    <div className="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-2 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+    </div>
+  );
+};
+
 
 // ORDERS SKELETON
 export const OrdersSkeleton = () => {

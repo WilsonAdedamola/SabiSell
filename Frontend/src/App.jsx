@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, useNavigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // 1. LAYOUTS
 import VendorLayout from './layouts/VendorLayout';
@@ -32,15 +32,13 @@ import Storefront from './pages/store/StoreFront';
 import ProductDetails from './pages/store/ProductDetails';
 import Cart from './pages/store/Cart';
 import Checkout from './pages/store/Checkout';
-import OrderSuccess from './pages/store/OrderSuccess';
 
 // 6. SYSTEM PAGES
 import NotFound from './pages/errors/NotFound';
-import { useEffect } from 'react';
 
-// ==========================================
+
 // ROUTER 1: MAIN SAAS APP 
-// ==========================================
+
 const mainRouter = createBrowserRouter([
   { path: "/", element: <Landing /> },
   { path: "/pricing", element: <Pricing /> },
@@ -78,16 +76,15 @@ const mainRouter = createBrowserRouter([
       { path: "product/:id", element: <ProductDetails /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <Checkout /> },
-      { path: "success", element: <OrderSuccess /> },
     ],
   },
 
   { path: "*", element: <NotFound /> }
 ]);
 
-// ==========================================
+
 // ROUTER 2: STOREFRONT APP (For Custom Domains)
-// ==========================================
+
 const storeRouter = createBrowserRouter([
   {
     path: "/",
@@ -97,7 +94,6 @@ const storeRouter = createBrowserRouter([
       { path: "product/:id", element: <ProductDetails /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <Checkout /> },
-      { path: "success", element: <OrderSuccess /> },
     ],
   },
   { path: "*", element: <NotFound /> }
