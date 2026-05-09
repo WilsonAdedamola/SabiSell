@@ -74,3 +74,87 @@ exports.getStoreByLink = async (req, res) => {
     res.status(500).json({ message: "Error loading store." });
   }
 };
+
+// @route   POST /api/storefront/:slug/checkout
+// @desc    Process a buyer's cart and create a new order
+exports.processCheckout = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { 
+      customerName, customerEmail, customerPhone, 
+      shippingAddress, items, subtotal, deliveryFee, 
+      totalAmount, deliveryMethod, paymentMethod 
+    } = req.body;
+
+    // 1. Find the Vendor
+    const vendor = await prisma.vendor.findUnique({
+      where: { storeLink: slug }
+    });
+
+    if (!vendor) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // 2. Check if customer exists in the CRM, or create them
+    let customer = await prisma.customer.findFirst({
+      where: { vendorId: vendor.id, email: customerEmail }
+    });
+    
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: { 
+          vendorId: vendor.id, 
+          fullName: customerName, 
+          email: customerEmail, 
+          phone: customerPhone, 
+          address: shippingAddress?.city || "Online" 
+        }
+      });
+    }
+
+    // 3. Create Order & Items in one transaction
+    const newOrder = await prisma.order.create({
+      data: {
+        vendorId: vendor.id,
+        customerId: customer.id,
+        orderNumber: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+        customerName,
+        customerEmail,
+        customerPhone,
+        shippingAddress: shippingAddress || {}, // Fallback for JSON
+        
+        // Ensure these are treated as floats/decimals, not strings
+        subtotal: parseFloat(subtotal) || 0,
+        deliveryFee: parseFloat(deliveryFee) || 0,
+        totalAmount: parseFloat(totalAmount) || 0,
+        
+        deliveryMethod,
+        paymentMethod,
+        status: 'Pending',
+        
+        items: {
+          create: items.map(item => ({
+            productId: String(item.productId), // Must be a valid UUID in the Product table!
+            name: String(item.name),
+            size: item.size ? String(item.size) : null,
+            color: item.color ? String(item.color) : null,
+            image: item.image ? String(item.image) : null,
+            quantity: parseInt(item.quantity, 10),
+            priceAtPurchase: parseFloat(item.price)
+          }))
+        }
+      }
+    });
+
+    res.status(201).json({ success: true, order: newOrder });
+
+  } catch (error) {
+    // THIS IS THE CRITICAL LINE: It will tell us exactly what Postgres is mad about
+    console.error("🔥 CHECKOUT ERROR DETAILS 🔥:", error);
+    
+    res.status(500).json({ 
+      message: 'Server error processing order', 
+      error: error.message 
+    });
+  }
+};

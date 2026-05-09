@@ -12,6 +12,7 @@ import X from '../../assets/social icons/x.svg';
 import api from '../../utils/api'; 
 import { useCart } from '../../context/CartContext'; 
 import { StoreFrontSkeleton } from "../../components/shared/Skeletons";
+import StoreNotFound from "./StoreNotFound";
 
 const Storefront = () => {
   const { fallbackStoreLink } = useParams(); 
@@ -99,11 +100,7 @@ const Storefront = () => {
 
   if (error || !store) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center px-4">
-        <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-        <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Store Not Found</h1>
-        <p className="text-gray-500 max-w-md">{error || "This store link does not exist or has been taken offline."}</p>
-      </div>
+      <StoreNotFound />
     );
   }
 
