@@ -5,7 +5,7 @@ import {
   Lock, ShieldCheck, CreditCard, Truck, 
   CheckCircle2, ChevronRight, ShoppingBag,
   MessageCircle, Building2, Zap, Loader2,
-  Package, MapPin, Mail, ArrowRight, Phone
+  Package, MapPin, Mail, ArrowRight, Phone, AlertCircle
 } from "lucide-react";
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
@@ -18,9 +18,11 @@ const Checkout = () => {
   const { cart, cartTotalPrice, cartTotalItems, clearCart } = useCart();
   
   const [store, setStore] = useState(null);
+  const [storeSlug, setStoreSlug] = useState(""); // Track the store slug for the API call
   const [isLoading, setIsLoading] = useState(true);
   
   const [currentStep, setCurrentStep] = useState(2);
+  const [checkoutError, setCheckoutError] = useState(""); // New state for backend errors
   const [mockOrder, setMockOrder] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -59,6 +61,7 @@ const Checkout = () => {
     let storeLink = fallbackStoreLink || (!mainDomains.includes(hostname) ? hostname.split('.')[0] : null);
 
     if (storeLink) {
+      setStoreSlug(storeLink); // Save this for the checkout API route
       api.get(`/storefront/${storeLink}`)
          .then(res => {
            setStore(res.data.store);
@@ -94,28 +97,69 @@ const Checkout = () => {
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
     if (!validatePhone(formData.phone)) return;
+    setCheckoutError(""); // Clear previous errors
     setCurrentStep(3);
   };
 
+  // --- ACTUAL BACKEND API INTEGRATION ---
   useEffect(() => {
     if (currentStep === 3) {
-      const paymentTimer = setTimeout(() => {
-        setMockOrder({
-          orderNumber: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-          email: formData.email || "No email provided",
-          address: `${formData.address}, ${formData.city}, ${formData.state}`,
-          total: total,
-          deliveryMethodName: deliveryOptions[deliveryMethod].name,
-          deliveryEta: deliveryOptions[deliveryMethod].eta
-        });
-        
-        clearCart();
-        setCurrentStep(4);
-      }, 3500); 
+      const processOrder = async () => {
+        try {
+          // Construct the payload to send to the backend
+          const orderPayload = {
+            customerName: formData.fullName,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            shippingAddress: {
+              address: formData.address,
+              apartment: formData.apartment,
+              city: formData.city,
+              state: formData.state,
+              landmark: formData.landmark
+            },
+            items: cart.map(item => ({
+              productId: item.productId || item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.cartQuantity,
+              size: item.size,
+              color: item.color,
+              image: item.imageUrls?.[0] || ""
+            })),
+            subtotal: cartTotalPrice,
+            deliveryFee: deliveryFee,
+            totalAmount: total,
+            deliveryMethod: deliveryMethod,
+            paymentMethod: paymentMethod 
+          };
 
-      return () => clearTimeout(paymentTimer);
+          // Hit the checkout endpoint
+          const response = await api.post(`/storefront/${storeSlug}/checkout`, orderPayload);
+
+          // Update the success screen with the real order data from the DB
+          setMockOrder({
+            orderNumber: response.data.order?.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+            email: formData.email || "No email provided",
+            address: `${formData.address}, ${formData.city}, ${formData.state}`,
+            total: total,
+            deliveryMethodName: deliveryOptions[deliveryMethod].name,
+            deliveryEta: deliveryOptions[deliveryMethod].eta
+          });
+          
+          clearCart();
+          setCurrentStep(4);
+
+        } catch (error) {
+          console.error("Checkout processing failed:", error);
+          setCheckoutError(error.response?.data?.message || "Something went wrong processing your order. Please check your connection and try again.");
+          setCurrentStep(2); // Kick them back to the form so they can try again
+        }
+      };
+
+      processOrder();
     }
-  }, [currentStep, clearCart, formData, total, deliveryMethod, deliveryOptions]);
+  }, [currentStep, clearCart, formData, total, deliveryMethod, paymentMethod, cartTotalPrice, deliveryFee, cart, storeSlug]);
 
 
   if (isLoading) return null;
@@ -153,10 +197,6 @@ const Checkout = () => {
             <div className="flex items-center gap-2 font-bold text-gray-900 text-sm bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
               <Lock className="w-4 h-4 text-emerald-600" /> Secure Checkout
             </div>
-            
-            {/* <div className="hidden md:flex items-center gap-2 text-sm font-bold text-gray-600">
-              Need help? <a href="#" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700"><MessageCircle className="w-4 h-4" /> Chat with us</a>
-            </div> */}
           </div>
 
           <div className="flex items-center justify-center max-w-2xl mx-auto mt-6 mb-4 relative">
@@ -200,6 +240,15 @@ const Checkout = () => {
       {/* STEP 2: CHECKOUT FORM & SUMMARY */}
       {currentStep === 2 && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          
+          {/* Error Banner */}
+          {checkoutError && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 max-w-7xl mx-auto">
+               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+               <p className="text-sm font-bold text-red-800">{checkoutError}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
             
             <div className="lg:col-span-7 xl:col-span-7">
@@ -518,7 +567,7 @@ const Checkout = () => {
             
             <div className="relative z-10 flex flex-col items-center">
               <Loader2 className="w-16 h-16 animate-spin mb-6" style={textThemeStyle} />
-              <h2 className="text-2xl font-serif text-gray-900 mb-2">Processing Payment</h2>
+              <h2 className="text-2xl font-serif text-gray-900 mb-2">Processing Order</h2>
               <p className="text-gray-500 font-medium">
                 Please wait while we securely process your order via {paymentMethod === 'paystack' ? 'Paystack' : 'Bank Transfer'}. Do not close this window.
               </p>

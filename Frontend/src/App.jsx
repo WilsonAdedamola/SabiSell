@@ -35,6 +35,7 @@ import Checkout from './pages/store/Checkout';
 
 // 6. SYSTEM PAGES
 import NotFound from './pages/errors/NotFound';
+import StoreNotFound from './pages/store/StoreNotFound';
 
 
 // ROUTER 1: MAIN SAAS APP 
@@ -47,6 +48,7 @@ const mainRouter = createBrowserRouter([
   { path: "/register", element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/verify-email", element: <VerifyEmail /> },
+  { path: "*", element: <NotFound /> },
 
   // VENDOR APP
   {
@@ -79,7 +81,7 @@ const mainRouter = createBrowserRouter([
     ],
   },
 
-  { path: "*", element: <NotFound /> }
+  { path: "*", element: <StoreNotFound /> }
 ]);
 
 
@@ -96,7 +98,7 @@ const storeRouter = createBrowserRouter([
       { path: "checkout", element: <Checkout /> },
     ],
   },
-  { path: "*", element: <NotFound /> }
+  { path: "*", element: <StoreNotFound /> }
 ]);
 
 const App = () => {

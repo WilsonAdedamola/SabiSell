@@ -7,6 +7,7 @@ import {
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
 import { ProductDetailsSkeleton } from "../../components/shared/Skeletons";
+import ProductNotFound from "./ProductNotFound";
 
 const ProductDetails = () => {
   const { fallbackStoreLink, productId, id } = useParams();
@@ -84,12 +85,7 @@ const ProductDetails = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFDFB] text-center px-4">
-        <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-2xl font-serif text-gray-900 mb-2">Product Not Found</h2>
-        <p className="text-gray-500 mb-6">This product might have been removed or the link is incorrect.</p>
-        <button onClick={() => navigate(basePath || "/")} className="text-emerald-700 font-bold hover:underline">Return to Store</button>
-      </div>
+      <ProductNotFound />
     );
   }
 

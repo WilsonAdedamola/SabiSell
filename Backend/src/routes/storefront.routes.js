@@ -6,6 +6,7 @@ const storefrontController = require('../controllers/storefront.controller');
 
 // 1. Get Store Info (e.g., /api/storefront/zara-fashion)
 router.get('/:storeLink', storefrontController.getStoreByLink);
+router.post('/:slug/checkout', storefrontController.processCheckout);
 
 // // 2. Get Store Products (e.g., /api/storefront/zara-fashion/products)
 // router.get('/:storeLink/products', storefrontController.getStoreProducts);

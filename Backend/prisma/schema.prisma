@@ -140,18 +140,26 @@ model Order {
   id               String    @id @default(uuid()) 
   orderNumber      String    @unique              
   vendorId         String
-  customerId       String
+  customerId       String?   // Made optional to support Guest Checkout
   
-  totalAmount      Decimal   @db.Decimal(10, 2)
+  // Snapshot of customer details at time of purchase
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+  shippingAddress  Json      // Stores the full address object safely
+  
+  subtotal         Decimal   @db.Decimal(10, 2)
   deliveryFee      Decimal   @default(0.00) @db.Decimal(10, 2)
+  totalAmount      Decimal   @db.Decimal(10, 2)
   
-  status           String    @default("PENDING")  
+  deliveryMethod   String    @default("negotiated")
   paymentMethod    String?   
   paymentStatus    String    @default("UNPAID")   
+  status           String    @default("PENDING")  
   customerNote     String?
   
   vendor           Vendor    @relation(fields: [vendorId], references: [id])
-  customer         Customer  @relation(fields: [customerId], references: [id])
+  customer         Customer? @relation(fields: [customerId], references: [id])
   items            OrderItem[]
 
   createdAt        DateTime  @default(now())
@@ -162,6 +170,12 @@ model OrderItem {
   id               String    @id @default(uuid())
   orderId          String
   productId        String
+  
+  // Snapshot of the exact product variation they bought
+  name             String
+  size             String?
+  color            String?
+  image            String?
   
   quantity         Int
   priceAtPurchase  Decimal   @db.Decimal(10, 2) 
