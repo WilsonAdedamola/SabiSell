@@ -77,13 +77,14 @@ exports.getStoreByLink = async (req, res) => {
 
 // @route   POST /api/storefront/:slug/checkout
 // @desc    Process a buyer's cart and create a new order
-exports.processCheckout = async (req, res) => {
+exports.processCheckout = async (req, res) => { // <--- async is right here!
   try {
     const { slug } = req.params;
+    
     const { 
       customerName, customerEmail, customerPhone, 
       shippingAddress, items, subtotal, deliveryFee, 
-      totalAmount, deliveryMethod, paymentMethod 
+      totalAmount, deliveryMethod, paymentMethod, customerNote 
     } = req.body;
 
     // 1. Find the Vendor
@@ -112,18 +113,21 @@ exports.processCheckout = async (req, res) => {
       });
     }
 
-    // 3. Create Order & Items in one transaction
+    // 3. Generate Order Number
+    const generatedOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // 4. Create Order & Items in one transaction
     const newOrder = await prisma.order.create({
       data: {
         vendorId: vendor.id,
         customerId: customer.id,
-        orderNumber: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+        orderNumber: generatedOrderNumber,
         customerName,
         customerEmail,
         customerPhone,
-        shippingAddress: shippingAddress || {}, // Fallback for JSON
-        
-        // Ensure these are treated as floats/decimals, not strings
+        shippingAddress: shippingAddress || {}, 
+        customerNote: customerNote || null, 
+
         subtotal: parseFloat(subtotal) || 0,
         deliveryFee: parseFloat(deliveryFee) || 0,
         totalAmount: parseFloat(totalAmount) || 0,
@@ -134,7 +138,7 @@ exports.processCheckout = async (req, res) => {
         
         items: {
           create: items.map(item => ({
-            productId: String(item.productId), // Must be a valid UUID in the Product table!
+            productId: String(item.productId), 
             name: String(item.name),
             size: item.size ? String(item.size) : null,
             color: item.color ? String(item.color) : null,
@@ -146,15 +150,21 @@ exports.processCheckout = async (req, res) => {
       }
     });
 
+    // 5. FIRE OFF THE NOTIFICATION TO THE VENDOR
+    await prisma.notification.create({
+      data: {
+        vendorId: vendor.id,
+        type: "order",
+        title: "New Order Received 🎉",
+        message: `You just received a new order (${generatedOrderNumber}) for ₦${parseFloat(totalAmount).toLocaleString()} from ${customerName}.`,
+        link: "/dashboard/orders"
+      }
+    });
+
     res.status(201).json({ success: true, order: newOrder });
 
   } catch (error) {
-    // THIS IS THE CRITICAL LINE: It will tell us exactly what Postgres is mad about
-    console.error("🔥 CHECKOUT ERROR DETAILS 🔥:", error);
-    
-    res.status(500).json({ 
-      message: 'Server error processing order', 
-      error: error.message 
-    });
+    console.error("CHECKOUT ERROR DETAILS:", error);
+    res.status(500).json({ message: 'Server error processing order', error: error.message });
   }
 };

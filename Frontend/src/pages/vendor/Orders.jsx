@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { jsPDF } from "jspdf"; 
 import { 
   Search, SlidersHorizontal, MoreVertical, 
   ChevronLeft, ChevronRight, Package, Truck, 
   CheckCircle2, Clock, Download, Eye, Phone,
   Loader2, AlertCircle, X, MapPin, Mail, Calendar,
-  RefreshCw, MessageCircle, ChevronDown, FileText
+  RefreshCw, MessageCircle, ChevronDown, FileText, Globe
 } from "lucide-react";
 import api from '../../utils/api'; 
 import { OrdersSkeleton } from "../../components/shared/Skeletons";
@@ -18,7 +19,7 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState("All Orders");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null); 
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false); // For custom dropdown
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const itemsPerPage = 8;
 
   const fetchOrders = async () => {
@@ -45,13 +46,12 @@ const Orders = () => {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(prev => ({ ...prev, status: newStatus }));
       }
-      setIsStatusDropdownOpen(false); // Close dropdown after selection
+      setIsStatusDropdownOpen(false);
     } catch (err) {
       alert("Failed to update status.");
     }
   };
 
-  // --- HELPER FUNCTIONS ---
   const getStatusDetails = (status) => {
     switch(status) {
       case "Pending": return { color: "bg-orange-50 text-orange-700 border-orange-200", icon: Clock };
@@ -69,55 +69,109 @@ const Orders = () => {
 
   const formatWhatsAppNumber = (phone) => {
     if (!phone) return "";
-    let formatted = phone.replace(/\D/g, ''); // Remove non-numeric chars
+    let formatted = phone.replace(/\D/g, '');
     if (formatted.startsWith('0')) {
-      formatted = '234' + formatted.slice(1); // Convert 080... to 23480...
+      formatted = '234' + formatted.slice(1);
     }
     return formatted;
   };
 
   const handleDownloadInvoice = (order) => {
-    const content = `
+    const doc = new jsPDF();
+    let y = 20;
 
-          INVOICE / RECEIPT
+    // 1. Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("INVOICE", 105, y, { align: "center" });
+    y += 15;
 
-Order ID: ${order.orderNumber}
-Date: ${new Date(order.createdAt).toLocaleString()}
-Status: ${order.status}
-
-CUSTOMER DETAILS
-Name: ${order.customerName}
-Phone: ${order.customerPhone}
-Email: ${order.customerEmail || "N/A"}
-
-SHIPPING ADDRESS
-${order.shippingAddress?.address || "N/A"}
-${order.shippingAddress?.apartment ? order.shippingAddress.apartment + '\n' : ''}${order.shippingAddress?.city}, ${order.shippingAddress?.state}
-${order.shippingAddress?.landmark ? `Landmark: ${order.shippingAddress.landmark}` : ''}
-
-ORDER ITEMS
-${order.items.map(i => `- [Qty: ${i.quantity}] ${i.name} (@ NGN ${Number(i.priceAtPurchase).toLocaleString()})`).join('\n')}
-
------------------------------------------
-Subtotal:      NGN ${Number(order.subtotal).toLocaleString()}
-Delivery Fee:  ${order.deliveryMethod === 'negotiated' ? 'To be negotiated' : `NGN ${Number(order.deliveryFee).toLocaleString()}`}
------------------------------------------
-TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
-`;
+    // 2. Order & Customer Info
+    doc.setFontSize(10);
     
-    // Create a blob and trigger download
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${order.orderNumber}_Invoice.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    doc.setFont("helvetica", "bold");
+    doc.text("Order Details:", 20, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Order ID: ${order.orderNumber}`, 20, y + 6);
+    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, 20, y + 12);
+    doc.text(`Status: ${order.status}`, 20, y + 18);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Billed To:", 120, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${order.customerName}`, 120, y + 6);
+    doc.text(`${order.customerPhone}`, 120, y + 12);
+    if (order.customerEmail) doc.text(`${order.customerEmail}`, 120, y + 18);
+
+    y += 30;
+
+    // 3. Shipping Address
+    doc.setFont("helvetica", "bold");
+    doc.text("Shipping Address:", 20, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${order.shippingAddress?.address || "N/A"}`, 20, y + 6);
+    const apt = order.shippingAddress?.apartment ? `${order.shippingAddress.apartment}, ` : "";
+    doc.text(`${apt}${order.shippingAddress?.city}, ${order.shippingAddress?.state}, ${order.shippingAddress?.country || "Nigeria"}`, 20, y + 12);
+    if (order.shippingAddress?.landmark) {
+      doc.text(`Landmark: ${order.shippingAddress.landmark}`, 20, y + 18);
+      y += 6;
+    }
+    
+    y += 25;
+
+    // 4. Items Table Header
+    doc.setFillColor(245, 245, 245);
+    doc.rect(20, y - 5, 170, 10, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text("Item Description", 22, y);
+    doc.text("Qty", 120, y);
+    doc.text("Unit Price", 140, y);
+    doc.text("Total", 170, y);
+    
+    y += 10;
+    doc.setFont("helvetica", "normal");
+
+    // 5. Items Loop
+    order.items.forEach(item => {
+      const itemTotal = item.quantity * Number(item.priceAtPurchase);
+      const splitName = doc.splitTextToSize(item.name, 90); 
+      doc.text(splitName, 22, y);
+      
+      doc.text(`${item.quantity}`, 120, y);
+      doc.text(`NGN ${Number(item.priceAtPurchase).toLocaleString()}`, 140, y);
+      doc.text(`NGN ${itemTotal.toLocaleString()}`, 170, y);
+      
+      y += splitName.length * 6 + 4; 
+    });
+
+    y += 5;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y, 190, y); 
+    y += 8;
+
+    // 6. Totals Section
+    doc.text("Subtotal:", 130, y);
+    doc.text(`NGN ${Number(order.subtotal).toLocaleString()}`, 170, y);
+    y += 8;
+    
+    doc.text("Delivery Fee:", 130, y);
+    doc.text(order.deliveryMethod === 'negotiated' ? 'Negotiated' : `NGN ${Number(order.deliveryFee).toLocaleString()}`, 170, y);
+    y += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Total Amount:", 130, y);
+    doc.text(`NGN ${Number(order.totalAmount).toLocaleString()}`, 170, y);
+
+    // 7. Footer Note
+    y += 25;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.text("Thank you for your business", 105, y, { align: "center" });
+
+    doc.save(`Invoice_${order.orderNumber}.pdf`);
   };
 
-  // --- FILTER LOGIC ---
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -132,6 +186,15 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const currentOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // --- NEW: Dynamic Tabs Data with Counts ---
+  const tabsData = [
+    { name: "All Orders", count: orders.length },
+    { name: "Pending", count: pendingCount },
+    { name: "Processing", count: orders.filter(o => o.status === "Processing").length },
+    { name: "Shipped", count: orders.filter(o => o.status === "Shipped").length },
+    { name: "Delivered", count: completedCount }
+  ];
 
   if (isLoading) return <OrdersSkeleton />;
 
@@ -183,17 +246,22 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
           />
         </div>
 
-        {/* TABS */}
+        {/* --- UPDATED TABS WITH COUNTS --- */}
         <div className="flex overflow-x-auto hide-scrollbar gap-3 pb-2">
-          {["All Orders", "Pending", "Processing", "Shipped", "Delivered"].map((tab) => (
+          {tabsData.map((tab) => (
             <button 
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full font-bold text-sm shrink-0 transition-colors border ${
-                activeTab === tab ? 'bg-[#044e3b] text-white border-[#044e3b]' : 'bg-white text-gray-600 border-gray-200'
+              key={tab.name}
+              onClick={() => setActiveTab(tab.name)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm shrink-0 transition-colors border ${
+                activeTab === tab.name ? 'bg-[#044e3b] text-white border-[#044e3b]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
               }`}
             >
-              {tab}
+              {tab.name}
+              <span className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${
+                activeTab === tab.name ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {tab.count}
+              </span>
             </button>
           ))}
         </div>
@@ -210,9 +278,14 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
               {/* MOBILE VIEW */}
               <div className="lg:hidden divide-y divide-gray-100">
                 {currentOrders.map((order) => (
-                  <div key={order.id} onClick={() => setSelectedOrder(order)} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                  <div key={order.id} onClick={() => setSelectedOrder(order)} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer relative">
                     <div className="flex justify-between mb-2">
-                      <span className="font-bold text-gray-900">{order.orderNumber}</span>
+                      <span className="font-bold text-gray-900 flex items-center gap-2">
+                        {order.orderNumber}
+                        {order.shippingAddress?.country === 'International Shipping' && (
+                          <Globe className="w-3.5 h-3.5 text-blue-500" />
+                        )}
+                      </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatusDetails(order.status).color}`}>
                         {order.status}
                       </span>
@@ -244,7 +317,14 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                   <tbody className="divide-y divide-gray-100">
                     {currentOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-gray-900">{order.orderNumber}</td>
+                        <td className="px-6 py-4">
+                          <span className="font-bold text-gray-900 flex items-center gap-2">
+                            {order.orderNumber}
+                            {order.shippingAddress?.country === 'International Shipping' && (
+                              <Globe className="w-4 h-4 text-blue-500" title="International Order" />
+                            )}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           <p className="font-bold text-gray-900">{order.customerName}</p>
                           <p className="text-xs text-gray-400">{order.customerPhone}</p>
@@ -356,7 +436,6 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                       </div>
                       <p className="text-sm font-bold text-gray-900">{selectedOrder.customerPhone}</p>
                     </div>
-                    {/* WhatsApp Button */}
                     <a 
                       href={`https://wa.me/${formatWhatsAppNumber(selectedOrder.customerPhone)}?text=Hello ${selectedOrder.customerName}, this is regarding your order ${selectedOrder.orderNumber}...`}
                       target="_blank"
@@ -369,8 +448,21 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                 </div>
               </div>
 
+              {/* --- NEW: International Delivery Alert --- */}
+              {selectedOrder.shippingAddress?.country === 'International Shipping' && (
+                <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
+                  <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-blue-900">International Delivery Request</p>
+                    <p className="text-blue-800 mt-1 leading-relaxed">
+                      This buyer requires international shipping. Please contact them via WhatsApp or email to confirm their full delivery address, calculate the shipping cost based on weight/distance, and arrange payment.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Pay Delivery Later Reminder */}
-              {selectedOrder.deliveryMethod === 'negotiated' && (
+              {selectedOrder.deliveryMethod === 'negotiated' && !selectedOrder.shippingAddress?.country && (
                 <div className="flex gap-3 bg-orange-50 border border-orange-200 rounded-2xl p-4 text-sm">
                   <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
                   <div>
@@ -401,7 +493,7 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                     <div className="text-sm text-gray-700 font-medium leading-relaxed">
                       <p>{selectedOrder.shippingAddress?.address}</p>
                       {selectedOrder.shippingAddress?.apartment && <p>{selectedOrder.shippingAddress.apartment}</p>}
-                      <p>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state}</p>
+                      <p>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state}, {selectedOrder.shippingAddress?.country || "Nigeria"}</p>
                       {selectedOrder.shippingAddress?.landmark && (
                         <p className="text-xs text-orange-600 mt-2 font-bold italic">Landmark: {selectedOrder.shippingAddress.landmark}</p>
                       )}
@@ -428,7 +520,6 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                         <p className="text-[11px] text-gray-500 font-medium">Price: ₦{Number(item.priceAtPurchase).toLocaleString()}</p>
                       </div>
                       
-                      {/* PROMINENT QUANTITY */}
                       <div className="flex flex-col items-end gap-1.5 pl-2">
                         <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 font-black rounded-lg text-xs">
                           Qty: {item.quantity}
@@ -461,10 +552,9 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
               </div>
             </div>
 
-            {/* Modal Footer: Custom Dropdown & Download Button */}
+            {/* Modal Footer */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 grid grid-cols-2 gap-3 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
               
-              {/* Custom Status Dropdown */}
               <div className="relative">
                 <button 
                   onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -494,7 +584,6 @@ TOTAL AMOUNT:  NGN ${Number(order.totalAmount).toLocaleString()}
                 )}
               </div>
 
-              {/* Download Invoice Button */}
               <button 
                 onClick={() => handleDownloadInvoice(selectedOrder)}
                 className="px-4 py-3.5 bg-[#044e3b] text-white rounded-xl text-sm font-bold shadow-md hover:bg-[#033d2e] transition-colors flex items-center justify-center gap-2"

@@ -36,6 +36,8 @@ import Checkout from './pages/store/Checkout';
 // 6. SYSTEM PAGES
 import NotFound from './pages/errors/NotFound';
 import StoreNotFound from './pages/store/StoreNotFound';
+import Discounts from './pages/vendor/Discount';
+import StoreLink from './pages/vendor/StoreLink';
 
 
 // ROUTER 1: MAIN SAAS APP 
@@ -66,6 +68,8 @@ const mainRouter = createBrowserRouter([
       { path: "messages/:id", element: <ChatScreen /> },
       { path: "settings", element: <Settings /> },
       { path: "billing", element: <Billing /> },
+      { path: "discounts", element: <Discounts /> },
+      { path: "store-link", element: <StoreLink /> },
     ],
   },
 

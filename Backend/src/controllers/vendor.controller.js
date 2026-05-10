@@ -106,6 +106,17 @@ exports.completeOnboarding = async (req, res) => {
       },
     });
 
+    // --- NEW: TRIGGER WELCOME NOTIFICATION ---
+    await prisma.notification.create({
+      data: {
+        vendorId: vendorId,
+        type: "system",
+        title: "Welcome to SabiSell!",
+        message: "Your store is now live. Add more products and share your link to start getting orders.",
+        link: "/dashboard/products/new"
+      }
+    });
+
     res.status(200).json({
       message: "Store setup complete!",
       store: {
@@ -119,6 +130,7 @@ exports.completeOnboarding = async (req, res) => {
     res.status(500).json({ message: "Server error during onboarding." });
   }
 };
+
 
 // @route   GET /api/vendors/dashboard
 exports.getDashboardStats = async (req, res) => {

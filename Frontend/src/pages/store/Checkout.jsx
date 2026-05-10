@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import Confetti from 'react-confetti';
 import { 
-  Lock, ShieldCheck, CreditCard, Truck, 
+  Lock, ChevronDown, CreditCard, Truck, 
   CheckCircle2, ChevronRight, ShoppingBag,
   MessageCircle, Building2, Zap, Loader2,
-  Package, MapPin, Mail, ArrowRight, Phone, AlertCircle
+  Package, MapPin, Mail, ArrowRight, Phone, AlertCircle, FileText
 } from "lucide-react";
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
@@ -18,26 +18,27 @@ const Checkout = () => {
   const { cart, cartTotalPrice, cartTotalItems, clearCart } = useCart();
   
   const [store, setStore] = useState(null);
-  const [storeSlug, setStoreSlug] = useState(""); // Track the store slug for the API call
+  const [storeSlug, setStoreSlug] = useState(""); 
   const [isLoading, setIsLoading] = useState(true);
   
   const [currentStep, setCurrentStep] = useState(2);
-  const [checkoutError, setCheckoutError] = useState(""); // New state for backend errors
+  const [checkoutError, setCheckoutError] = useState(""); 
   const [mockOrder, setMockOrder] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
     email: "",
+    country: "Nigeria", // Defaults to Nigeria
     address: "",
     apartment: "",
-    state: "Lagos",
+    state: "", 
     city: "",
-    landmark: "" 
+    landmark: "",
+    customerNote: "" 
   });
   
   const [phoneError, setPhoneError] = useState("");
-  // Default and currently ONLY allowed option
   const [deliveryMethod, setDeliveryMethod] = useState("negotiated"); 
   const [paymentMethod, setPaymentMethod] = useState("paystack");
 
@@ -61,7 +62,7 @@ const Checkout = () => {
     let storeLink = fallbackStoreLink || (!mainDomains.includes(hostname) ? hostname.split('.')[0] : null);
 
     if (storeLink) {
-      setStoreSlug(storeLink); // Save this for the checkout API route
+      setStoreSlug(storeLink); 
       api.get(`/storefront/${storeLink}`)
          .then(res => {
            setStore(res.data.store);
@@ -74,16 +75,28 @@ const Checkout = () => {
     }
   }, [fallbackStoreLink, cart.length, navigate, basePath, currentStep]);
 
-  const validatePhone = (phone) => {
-    const phoneRegex = /^(\+?234|0)[789]\d{9}$/;
-    if (!phone) {
+  const validatePhone = (phoneValue, countryValue) => {
+    if (!phoneValue) {
       setPhoneError("Phone number is required");
       return false;
     }
-    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-      setPhoneError("Please enter a valid Nigerian phone number");
-      return false;
+
+    const cleanPhone = phoneValue.replace(/\s/g, '');
+
+    if (countryValue === "Nigeria") {
+      const naijaRegex = /^(\+?234|0)[789]\d{9}$/;
+      if (!naijaRegex.test(cleanPhone)) {
+        setPhoneError("Please enter a valid Nigerian phone number");
+        return false;
+      }
+    } else {
+      const intlRegex = /^\+?[0-9]{8,15}$/;
+      if (!intlRegex.test(cleanPhone)) {
+        setPhoneError("Please enter a valid phone number with country code");
+        return false;
+      }
     }
+
     setPhoneError("");
     return true;
   };
@@ -91,33 +104,41 @@ const Checkout = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    if (name === "phone") validatePhone(value);
+    
+    if (name === "phone") {
+      validatePhone(value, formData.country);
+    } 
+    else if (name === "country" && formData.phone) {
+      validatePhone(formData.phone, value);
+    }
   };
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
-    if (!validatePhone(formData.phone)) return;
-    setCheckoutError(""); // Clear previous errors
+    if (!validatePhone(formData.phone, formData.country)) return;
+    setCheckoutError(""); 
     setCurrentStep(3);
   };
 
-  // --- ACTUAL BACKEND API INTEGRATION ---
   useEffect(() => {
     if (currentStep === 3) {
       const processOrder = async () => {
         try {
-          // Construct the payload to send to the backend
+          const isIntl = formData.country === "International Shipping";
+
           const orderPayload = {
             customerName: formData.fullName,
             customerEmail: formData.email,
             customerPhone: formData.phone,
             shippingAddress: {
-              address: formData.address,
-              apartment: formData.apartment,
-              city: formData.city,
-              state: formData.state,
-              landmark: formData.landmark
+              country: formData.country,
+              address: isIntl ? "Pending International Address" : formData.address,
+              apartment: isIntl ? "" : formData.apartment,
+              city: isIntl ? "International" : formData.city,
+              state: isIntl ? "International" : formData.state,
+              landmark: isIntl ? "" : formData.landmark
             },
+            customerNote: formData.customerNote,
             items: cart.map(item => ({
               productId: item.productId || item.id,
               name: item.name,
@@ -134,14 +155,14 @@ const Checkout = () => {
             paymentMethod: paymentMethod 
           };
 
-          // Hit the checkout endpoint
           const response = await api.post(`/storefront/${storeSlug}/checkout`, orderPayload);
 
-          // Update the success screen with the real order data from the DB
           setMockOrder({
             orderNumber: response.data.order?.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
             email: formData.email || "No email provided",
-            address: `${formData.address}, ${formData.city}, ${formData.state}`,
+            address: isIntl 
+              ? "International Shipping (Pending Address)" 
+              : `${formData.address}, ${formData.city}, ${formData.state}`,
             total: total,
             deliveryMethodName: deliveryOptions[deliveryMethod].name,
             deliveryEta: deliveryOptions[deliveryMethod].eta
@@ -153,7 +174,7 @@ const Checkout = () => {
         } catch (error) {
           console.error("Checkout processing failed:", error);
           setCheckoutError(error.response?.data?.message || "Something went wrong processing your order. Please check your connection and try again.");
-          setCurrentStep(2); // Kick them back to the form so they can try again
+          setCurrentStep(2); 
         }
       };
 
@@ -241,7 +262,6 @@ const Checkout = () => {
       {currentStep === 2 && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
-          {/* Error Banner */}
           {checkoutError && (
             <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 max-w-7xl mx-auto">
                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -254,9 +274,131 @@ const Checkout = () => {
             <div className="lg:col-span-7 xl:col-span-7">
               <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-10">
                 
+                {/* 1. Delivery Address (MOVED TO FIRST) */}
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>1</div>
+                      <h2 className="text-xl font-serif text-gray-900 leading-none">Delivery Address</h2>
+                    </div>
+                  </div>
+                  <div className="pl-0 sm:pl-9 space-y-4">
+                    
+                    <div className="relative mb-4">
+                      <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase z-10">Country / Region</label>
+                      <select 
+                        name="country" 
+                        value={formData.country} 
+                        onChange={handleChange}
+                        className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm appearance-none relative"
+                        style={ringThemeStyle}
+                      >
+                        <option value="Nigeria">Nigeria</option>
+                        <option value="International Shipping">International Shipping</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    {formData.country === "Nigeria" ? (
+                      <>
+                        <div className="relative">
+                          <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Address</label>
+                          <input 
+                            type="text" name="address" required value={formData.address} onChange={handleChange}
+                            className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
+                            style={ringThemeStyle}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="relative">
+                            <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Apt, suite (optional)</label>
+                            <input 
+                              type="text" name="apartment" value={formData.apartment} onChange={handleChange}
+                              className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
+                              style={ringThemeStyle}
+                            />
+                          </div>
+                          
+                          <div className="relative">
+                            <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">State</label>
+                            <input 
+                              type="text" name="state" required value={formData.state} onChange={handleChange}
+                              placeholder="e.g. Lagos"
+                              className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
+                              style={ringThemeStyle}
+                            />
+                          </div>
+                          
+                          <div className="relative">
+                            <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">City</label>
+                            <input 
+                              type="text" name="city" required value={formData.city} onChange={handleChange}
+                              className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
+                              style={ringThemeStyle}
+                            />
+                          </div>
+                          
+                          <div className="relative flex flex-col">
+                            <div className="relative">
+                              <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Landmark (Optional)</label>
+                              <input 
+                                type="text" name="landmark" value={formData.landmark} onChange={handleChange}
+                                placeholder="e.g. Beside Zenith Bank"
+                                className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
+                                style={ringThemeStyle}
+                              />
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1 ml-1 leading-tight">
+                              A popular building or place near you to help the driver.
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-blue-900">International Delivery</p>
+                          <p className="text-sm text-blue-800 mt-1 leading-relaxed">
+                            International shipping fees vary depending on the weight of the goods and the destination distance. The vendor will contact you via phone or email to collect your full delivery address, calculate the exact shipping cost, and provide further information.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative mt-2">
+                      <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                        <FileText className="w-3 h-3" /> Order Note (Optional)
+                      </label>
+                      <textarea 
+                        name="customerNote" 
+                        value={formData.customerNote} 
+                        onChange={handleChange}
+                        placeholder={formData.country === "International Shipping" ? "Please provide any specific delivery details or instructions..." : "Add any special instructions for the vendor..."}
+                        className="w-full px-4 pt-8 pb-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm resize-none h-28"
+                        style={ringThemeStyle}
+                      />
+                    </div>
+
+                    {formData.country === "Nigeria" && formData.city && deliveryMethod !== 'negotiated' && (
+                      <div className="mt-4 flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <Truck className="w-5 h-5 text-emerald-700 shrink-0" />
+                          <div>
+                            <h4 className="text-sm font-bold text-emerald-900">Good news! We deliver to {formData.city}</h4>
+                            <p className="text-xs font-medium text-emerald-700 mt-0.5">Estimated delivery: {deliveryOptions[deliveryMethod].eta}</p>
+                          </div>
+                        </div>
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 hidden sm:block" />
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* 2. Contact Information (MOVED TO SECOND) */}
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>1</div>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>2</div>
                     <h2 className="text-xl font-serif text-gray-900 leading-none">Contact Information</h2>
                   </div>
                   <p className="text-sm font-medium text-gray-500 mb-6 pl-9">We'll use this to send your order updates</p>
@@ -271,11 +413,12 @@ const Checkout = () => {
                           style={ringThemeStyle}
                         />
                       </div>
+                      
                       <div className="relative">
                         <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Phone Number</label>
                         <input 
                           type="tel" name="phone" required value={formData.phone} onChange={handleChange}
-                          placeholder="+234..."
+                          placeholder={formData.country === "Nigeria" ? "+234 or 080..." : "+1 (555)..."}
                           className={`w-full px-4 pt-6 pb-2 bg-white border ${phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm`}
                           style={!phoneError ? ringThemeStyle : {}}
                         />
@@ -293,89 +436,6 @@ const Checkout = () => {
                   </div>
                 </section>
 
-                <section>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>2</div>
-                      <h2 className="text-xl font-serif text-gray-900 leading-none">Delivery Address</h2>
-                    </div>
-                  </div>
-                  <div className="pl-0 sm:pl-9 space-y-4">
-                    <div className="relative">
-                      <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Country / Region</label>
-                      <select disabled className="w-full px-4 pt-6 pb-2 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 appearance-none opacity-80 cursor-not-allowed">
-                        <option>Nigeria</option>
-                      </select>
-                    </div>
-                    <div className="relative">
-                      <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Address</label>
-                      <input 
-                        type="text" name="address" required value={formData.address} onChange={handleChange}
-                        className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
-                        style={ringThemeStyle}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="relative">
-                        <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Apt, suite (optional)</label>
-                        <input 
-                          type="text" name="apartment" value={formData.apartment} onChange={handleChange}
-                          className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
-                          style={ringThemeStyle}
-                        />
-                      </div>
-                      <div className="relative">
-                        <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">State</label>
-                        <select 
-                          name="state" value={formData.state} onChange={handleChange}
-                          className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm appearance-none"
-                          style={ringThemeStyle}
-                        >
-                          <option value="Lagos">Lagos</option>
-                          <option value="Abuja">Abuja</option>
-                          <option value="Oyo">Oyo</option>
-                        </select>
-                      </div>
-                      <div className="relative">
-                        <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">City</label>
-                        <input 
-                          type="text" name="city" required value={formData.city} onChange={handleChange}
-                          className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
-                          style={ringThemeStyle}
-                        />
-                      </div>
-                      
-                      <div className="relative flex flex-col">
-                        <div className="relative">
-                          <label className="absolute top-2 left-4 text-[10px] font-bold text-gray-400 uppercase">Landmark (Optional)</label>
-                          <input 
-                            type="text" name="landmark" value={formData.landmark} onChange={handleChange}
-                            placeholder="e.g. Beside Zenith Bank"
-                            className="w-full px-4 pt-6 pb-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all font-bold text-gray-900 shadow-sm"
-                            style={ringThemeStyle}
-                          />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-1 ml-1 leading-tight">
-                          A popular building or place near you to help the driver.
-                        </p>
-                      </div>
-                    </div>
-
-                    {formData.city && deliveryMethod !== 'negotiated' && (
-                      <div className="mt-4 flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <Truck className="w-5 h-5 text-emerald-700 shrink-0" />
-                          <div>
-                            <h4 className="text-sm font-bold text-emerald-900">Good news! We deliver to {formData.city}</h4>
-                            <p className="text-xs font-medium text-emerald-700 mt-0.5">Estimated delivery: {deliveryOptions[deliveryMethod].eta}</p>
-                          </div>
-                        </div>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 hidden sm:block" />
-                      </div>
-                    )}
-                  </div>
-                </section>
-
                 {/* 3. Delivery Method */}
                 <section>
                   <div className="flex items-center gap-3 mb-6">
@@ -386,7 +446,7 @@ const Checkout = () => {
                   <div className="pl-0 sm:pl-9 space-y-3">
                     {Object.entries(deliveryOptions).map(([key, option]) => {
                       const isSelected = deliveryMethod === key;
-                      const isDisabled = key !== 'negotiated'; // Disable all except negotiated
+                      const isDisabled = key !== 'negotiated'; 
                       const Icon = option.icon;
                       
                       return (
@@ -423,6 +483,7 @@ const Checkout = () => {
                   </div>
                 </section>
 
+                {/* 4. Payment Method */}
                 <section>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>4</div>

@@ -322,7 +322,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 2. STAT CARDS (Real Data) */}
+            {/* 2. STAT CARDS */}
             <div>
               <div className="flex justify-end mb-4">
                 <select className="bg-white border border-gray-200 text-gray-700 font-bold text-sm rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-sabi-primary/20">
