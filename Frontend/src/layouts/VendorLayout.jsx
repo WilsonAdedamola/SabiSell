@@ -9,19 +9,24 @@ import {
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
 import ConfirmModal from "../components/shared/ConfirmModal"; 
+import NotificationModal from "../pages/vendor/NotificationModal";
 import api from "../utils/api";
 
 const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   
-  // --- MODAL STATE ---
+  // --- MODAL & NOTIFICATION STATES ---
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  
+  // REAL NOTIFICATION STATE
+  const [notifications, setNotifications] = useState([]);
+  const unreadNotifsCount = notifications.filter(n => !n.isRead).length;
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- DYNAMIC VENDOR STATE ---
   const [vendorData, setVendorData] = useState({
     name: "Vendor",
     storeName: null,
@@ -31,13 +36,11 @@ const VendorLayout = () => {
     storeLink: null
   });
 
-  // --- DYNAMIC BADGE STATE ---
   const [stats, setStats] = useState({
     products: 0,
     orders: 0
   });
 
-  // --- NEW: FORCE ONBOARDING CHECK ---
   useEffect(() => {
     const token = localStorage.getItem('sabisell_token');
     const storedData = localStorage.getItem('sabisell_vendor');
@@ -48,14 +51,11 @@ const VendorLayout = () => {
     }
 
     const parsedVendor = JSON.parse(storedData);
-    
-    // If they have no storeLink, they haven't finished onboarding!
     if (!parsedVendor.storeLink || parsedVendor.storeLink === "") {
       navigate('/dashboard/onboarding', { replace: true });
     }
   }, [navigate, location.pathname]);
 
-  // --- 1. FETCH VENDOR LOCALLY ---
   useEffect(() => {
     const fetchVendorData = () => {
       const storedData = localStorage.getItem('sabisell_vendor');
@@ -69,31 +69,61 @@ const VendorLayout = () => {
     return () => window.removeEventListener('storage', fetchVendorData);
   }, []);
 
-  // --- 2. FETCH BADGE STATS ---
+  // --- FETCH STATS & NOTIFICATIONS ---
   useEffect(() => {
-    const fetchSidebarStats = async () => {
+    const fetchSidebarData = async () => {
       try {
-        const [prodRes, ordRes] = await Promise.all([
+        const [prodRes, ordRes, notifRes] = await Promise.all([
           api.get('/products').catch(() => ({ data: { products: [] } })),
-          api.get('/orders').catch(() => ({ data: { orders: [] } }))
+          api.get('/orders').catch(() => ({ data: { orders: [] } })),
+          api.get('/notifications').catch(() => ({ data: { notifications: [] } }))
         ]);
         
+        const activeOrders = ordRes.data.orders?.filter(
+          order => order.status === 'Pending' || order.status === 'Processing'
+        ) || [];
+
         setStats({
           products: prodRes.data.products?.length || 0,
-          orders: ordRes.data.orders?.length || 0
+          orders: activeOrders.length 
         });
+
+        // Set Real Notifications
+        if (notifRes.data.notifications) {
+          setNotifications(notifRes.data.notifications);
+        }
+
       } catch (error) {
-        console.error("Failed to load sidebar badge stats:", error);
+        console.error("Failed to load sidebar data:", error);
       }
     };
 
     if (localStorage.getItem('sabisell_token') && vendorData.storeLink) {
-      fetchSidebarStats();
+      fetchSidebarData();
     }
   }, [location.pathname, vendorData.storeLink]); 
 
+  // --- NOTIFICATION ACTIONS ---
+  const markAsRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`); // Update DB
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.put(`/notifications/read-all`); // Update DB
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+    }
+  };
+
   // --- UI STATE FLAGS ---
-  const isStoreCreated = Boolean(vendorData?.storeLink); // NEW: Controls UI Visibility
+  const isStoreCreated = Boolean(vendorData?.storeLink); 
   const hasStore = vendorData.isOnline && vendorData.storeName;
   const displayName = hasStore ? vendorData.storeName : vendorData.name;
   const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
@@ -106,7 +136,6 @@ const VendorLayout = () => {
         : `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}`)
     : "/dashboard/settings";
 
-  // --- LOGOUT LOGIC ---
   const handleLogoutClick = () => {
     setIsMobileMenuOpen(false); 
     setIsLogoutModalOpen(true); 
@@ -118,25 +147,18 @@ const VendorLayout = () => {
     navigate('/login', { replace: true });
   };
 
-  // const navigate = useNavigate(); 
-  
   useEffect(() => {
-  const syncTabs = (event) => {
-    // If the storage event was triggered by our token changing in another tab
-    if (event.key === 'sabisell_token') {
-      // If the token was removed (they logged out in another tab) or changed (they logged into a different account), redirect to login
-      if (!event.newValue || event.newValue !== event.oldValue) {
-        navigate('/login', { replace: true });
+    const syncTabs = (event) => {
+      if (event.key === 'sabisell_token') {
+        if (!event.newValue || event.newValue !== event.oldValue) {
+          navigate('/login', { replace: true });
+        }
       }
-    }
-  };
+    };
+    window.addEventListener('storage', syncTabs);
+    return () => window.removeEventListener('storage', syncTabs);
+  }, [navigate]);
 
-  window.addEventListener('storage', syncTabs);
-  return () => window.removeEventListener('storage', syncTabs);
-}, [navigate]);
-
-
-  // --- NAVIGATION ARRAYS ---
   const navigation = [
     { section: "STORE", items: [
       { name: "My Store", icon: Store, path: storeUrl, external: !!vendorData?.storeLink },
@@ -147,7 +169,7 @@ const VendorLayout = () => {
     ]},
     { section: "SALES & MARKETING", items: [
       { name: "Discounts & Coupons", icon: Tag, path: "/dashboard/discounts" },
-      { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/link" },
+      { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/store-link" },
     ]},
     { section: "SETTINGS", items: [
       { name: "Billing", icon: CreditCardIcon, path: "/dashboard/billing" },
@@ -178,7 +200,6 @@ const VendorLayout = () => {
     </div>
   );
 
-  // --- REUSABLE SIDEBAR COMPONENT ---
   const SidebarContent = ({ collapsed = false }) => (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6 justify-between lg:justify-start'} border-b border-gray-100 shrink-0 transition-all duration-300`}>
@@ -194,7 +215,6 @@ const VendorLayout = () => {
 
       <div className={`flex-1 overflow-y-auto py-6 ${collapsed ? 'px-3' : 'px-4'} space-y-6 hide-scrollbar transition-all duration-300`}>
         
-        {/* ONLY RENDER NAVIGATION IF STORE IS CREATED */}
         {isStoreCreated && (
           <>
             <Link 
@@ -269,7 +289,6 @@ const VendorLayout = () => {
           </>
         )}
 
-        {/* LOGOUT BUTTON - ALWAYS VISIBLE */}
         <div className={collapsed ? "mt-auto pt-4" : "mt-8 pt-4 border-t border-gray-100"}>
           <button 
             onClick={handleLogoutClick}
@@ -307,7 +326,15 @@ const VendorLayout = () => {
   return (
     <div className="flex h-screen bg-gray-50/50 font-sans overflow-hidden">
       
-      {/* --- CONFIRM LOGOUT MODAL --- */}
+      {/* --- DYNAMIC NOTIFICATION MODAL --- */}
+      <NotificationModal 
+        isOpen={isNotifOpen} 
+        onClose={() => setIsNotifOpen(false)} 
+        notifications={notifications}
+        markAsRead={markAsRead}
+        markAllAsRead={markAllAsRead}
+      />
+
       <ConfirmModal 
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -318,14 +345,10 @@ const VendorLayout = () => {
         cancelText="Cancel"
       />
 
-      {/* DESKTOP SIDEBAR */}
-      <aside 
-        className={`hidden lg:block ${isDesktopCollapsed ? 'w-22' : 'w-70'} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}
-      >
+      <aside className={`hidden lg:block ${isDesktopCollapsed ? 'w-22' : 'w-70'} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}>
         <SidebarContent collapsed={isDesktopCollapsed} />
       </aside>
 
-      {/* MOBILE SLIDE-OUT MENU */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
@@ -335,10 +358,8 @@ const VendorLayout = () => {
         </div>
       )}
 
-      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
         
-        {/* DESKTOP HEADER */}
         <header className="hidden lg:flex h-20 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0 z-10">
           <div className="flex items-center gap-4">
             <button 
@@ -349,7 +370,6 @@ const VendorLayout = () => {
               {isDesktopCollapsed ? <PanelLeftOpen className="w-6 h-6" /> : <PanelLeftClose className="w-6 h-6" />}
             </button>
             
-            {/* SEARCH BAR HIDDEN UNTIL STORE IS CREATED */}
             {isStoreCreated && (
               <div className="relative w-72 xl:w-96">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -373,9 +393,15 @@ const VendorLayout = () => {
                   <ExternalLink className="w-4 h-4 text-sabi-primary" /> View Store
                 </a>
                 <div className="w-px h-8 bg-gray-200 mx-2"></div>
-                <button className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors">
+                
+                <button 
+                  onClick={() => setIsNotifOpen(true)}
+                  className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                >
                   <Bell className="w-6 h-6" />
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
                 </button>
               </>
             )}
@@ -392,7 +418,6 @@ const VendorLayout = () => {
           </div>
         </header>
 
-        {/* MOBILE HEADER */}
         <header className="lg:hidden flex h-16 bg-white border-b border-gray-200 items-center justify-between px-4 shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 -ml-1.5 text-gray-600">
@@ -406,9 +431,15 @@ const VendorLayout = () => {
                 <button className="p-1.5 text-gray-600">
                   <Search className="w-5 h-5" />
                 </button>
-                <button className="relative p-1.5 text-gray-600 mr-1">
+
+                <button 
+                  onClick={() => setIsNotifOpen(true)}
+                  className="relative p-1.5 text-gray-600 mr-1"
+                >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
                 </button>
               </>
             )}
@@ -416,12 +447,10 @@ const VendorLayout = () => {
           </div>
         </header>
 
-        {/* MAIN OUTLET CONTAINER */}
         <main className="flex-1 flex flex-col min-h-0 relative w-full">
            <Outlet />
         </main>
 
-        {/* MOBILE BOTTOM NAVIGATION - HIDDEN UNTIL STORE CREATED */}
         {isStoreCreated && (
           <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-40 pb-safe">
             <div className="flex items-center justify-between px-2 h-16 relative">

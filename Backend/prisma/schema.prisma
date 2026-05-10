@@ -12,41 +12,41 @@ datasource db {
 // VENDOR & STORE
 
 model Vendor {
-  id                  String    @id @default(uuid())
-  email               String    @unique
-  passwordHash        String
-  fullName            String
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  fullName          String
   
   // Contact & Socials
-  phone               String?
-  whatsapp            String?
-  instagram           String?
-  facebook            String?
-  twitter             String?
-  tiktok              String?
-  snapchat            String?
+  phone             String?
+  whatsapp          String?
+  instagram         String?
+  facebook          String?
+  twitter           String?
+  tiktok            String?
+  snapchat          String?
   
   // Store Details
-  storeName           String?
-  storeLink           String?   @unique
-  storeCategory       String?   // Mapped from Settings.jsx
-  storeDescription    String?
-  logoUrl             String?
-  isOnline            Boolean   @default(true) // Defaulted to true so stores are live immediately
+  storeName         String?
+  storeLink         String?   @unique
+  storeCategory     String?   // Mapped from Settings.jsx
+  storeDescription  String?
+  logoUrl           String?
+  isOnline          Boolean   @default(true) // Defaulted to true so stores are live immediately
   
   // Store Appearance
-  themeColor          String    @default("#044e3b")
-  hasBanner           Boolean   @default(false)
-  bannerImage         String?
-  bannerTitle         String?
-  bannerSubtitle      String?
-  bannerDiscount      String?
+  themeColor        String    @default("#044e3b")
+  hasBanner         Boolean   @default(false)
+  bannerImage       String?
+  bannerTitle       String?
+  bannerSubtitle    String?
+  bannerDiscount    String?
 
-  // --- NEW: Slideshow Settings ---
+  // Slideshow Settings 
   enableSlideshow       Boolean   @default(false)
   slideshowImages       String[]
 
-  // --- NEW: Secondary Banner Settings ---
+  // Secondary Banner Settings 
   enableSecondaryBanner Boolean   @default(false)
   secondaryBannerTitle  String?
   secondaryBannerDesc   String?
@@ -75,6 +75,7 @@ model Vendor {
   orders              Order[]
   customers           Customer[]
   categories          Category[] 
+  notifications       Notification[] // --- NEW: Added Notification Relation ---
   
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -182,4 +183,20 @@ model OrderItem {
   
   order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product          Product   @relation(fields: [productId], references: [id])
+}
+
+// --- NEW: NOTIFICATIONS ---
+
+model Notification {
+  id        String   @id @default(uuid())
+  vendorId  String
+  type      String   // "order", "alert", "payment", "system"
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
 }
