@@ -19,7 +19,7 @@ const AddEditProduct = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true); 
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null); // Local Toast State
+  const [toast, setToast] = useState(null);
 
   // --- PLAN & LIMIT LOGIC ---
   const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
@@ -186,7 +186,6 @@ const AddEditProduct = () => {
         await api.post('/products', dataToSend);
       }
       
-      // --- USE YOUR TOAST COMPONENT ---
       setToast({ message: toastMessage, type: "success" });
       
       // Delay navigation so the user can see the Toast

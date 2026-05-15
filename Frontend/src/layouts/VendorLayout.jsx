@@ -5,7 +5,7 @@ import {
   BarChart2, Tag, QrCode, CreditCard, Settings, HelpCircle,
   Search, Bell, ExternalLink, Menu, X, Plus,
   ChevronRight, Rocket, MessageCircle,
-  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut
+  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut, PiggyBank
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
 import ConfirmModal from "../components/shared/ConfirmModal"; 
@@ -173,7 +173,7 @@ const VendorLayout = () => {
     ]},
     { section: "SETTINGS", items: [
       { name: "Billing", icon: CreditCardIcon, path: "/dashboard/billing" },
-      { name: "Payments", icon: CreditCard, path: "/dashboard/payments" },
+      { name: "Payments", icon: PiggyBank, path: "/dashboard/payments" },
       { name: "Store Settings", icon: Settings, path: "/dashboard/settings" },
     ]}
   ];

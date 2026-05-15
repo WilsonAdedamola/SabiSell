@@ -5,8 +5,9 @@ import {
   QrCode
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
-import IG from '../../assets/social icons/instagram.svg';
-import FB from '../../assets/social icons/facebook.svg';
+import IG from '../../assets/social icons/instagram.png';
+import FB from '../../assets/social icons/facebook.png';
+import WA from '../../assets/social icons/whatsapp.png';
 import X from '../../assets/social icons/x.svg';
 
 const StoreLink = () => {
@@ -167,12 +168,12 @@ const StoreLink = () => {
             {/* Social Media Quick Share */}
             <div className="bg-white border border-gray-100 rounded-3xl p-3 sm:p-8 shadow-sm">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-6">Quick Share to Socials</h3>
-              <div className="grid grid-cols-4 gap-2 sm:gap-4 max-h-20">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 max-h-full">
                 <a 
                   href={whatsappShareUrl} target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 sm:gap-3 p-4  rounded-xl sm:rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition-colors border border-[#25D366]/20"
                 >
-                  <MessageCircle className="w-5 h-5 sm:w-8 sm:h-8" />
+                  <img src={WA} alt="WhatsApp" className="w-5 h-5 sm:w-8 sm:h-8"/>
                   <span className="font-bold text-xs">WhatsApp</span>
                 </a>
                 <a 

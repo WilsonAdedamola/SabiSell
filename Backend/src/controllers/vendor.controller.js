@@ -1,5 +1,6 @@
 const prisma = require("../config/db");
 const cloudinary = require("cloudinary").v2;
+const axios = require('axios');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -330,5 +331,48 @@ exports.updateVendorSettings = async (req, res) => {
   } catch (error) {
     console.error("Update Settings Error:", error);
     res.status(500).json({ message: "Failed to update store settings." });
+  }
+};
+
+// @route   GET /api/vendors/banks
+// @desc    Fetch list of supported banks from Paystack
+exports.getBanks = async (req, res) => {
+  try {
+    const response = await axios.get('https://api.paystack.co/bank?currency=NGN', {
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+      }
+    });
+    res.status(200).json(response.data);
+  } catch (error) {
+    console.error("Fetch Banks Error:", error.response?.data || error.message);
+    res.status(500).json({ message: "Failed to fetch banks." });
+  }
+};
+
+// @route   GET /api/vendors/verify-account
+// @desc    Resolve account number and bank code to an account name
+exports.verifyBankAccount = async (req, res) => {
+  try {
+    const { account_number, bank_code } = req.query;
+
+    if (!account_number || !bank_code) {
+      return res.status(400).json({ message: "Account number and bank code are required." });
+    }
+
+    const response = await axios.get(
+      `https://api.paystack.co/bank/resolve?account_number=${account_number}&bank_code=${bank_code}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+        }
+      }
+    );
+
+    // Paystack returns { status: true, message: "Account number resolved", data: { account_name, account_number, bank_id } }
+    res.status(200).json(response.data);
+  } catch (error) {
+    // If Paystack can't find the account, it throws a 422 or 400 error
+    res.status(400).json({ message: "Could not verify account details. Check the number and bank." });
   }
 };
