@@ -38,6 +38,7 @@ import NotFound from './pages/errors/NotFound';
 import StoreNotFound from './pages/store/StoreNotFound';
 import Discounts from './pages/vendor/Discount';
 import StoreLink from './pages/vendor/StoreLink';
+import Payments from './pages/vendor/Payments';
 
 
 // ROUTER 1: MAIN SAAS APP 
@@ -70,6 +71,7 @@ const mainRouter = createBrowserRouter([
       { path: "billing", element: <Billing /> },
       { path: "discounts", element: <Discounts /> },
       { path: "store-link", element: <StoreLink /> },
+      { path: "payments", element: <Payments/> },
     ],
   },
 

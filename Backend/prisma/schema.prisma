@@ -62,6 +62,7 @@ model Vendor {
   bankName            String?
   accountNumber       String?
   accountName         String?
+  paystackSubaccount  String?
 
   // Delivery Settings
   deliveryFee         Decimal?  @db.Decimal(10, 2)
@@ -75,7 +76,7 @@ model Vendor {
   orders              Order[]
   customers           Customer[]
   categories          Category[] 
-  notifications       Notification[] // --- NEW: Added Notification Relation ---
+  notifications       Notification[]
   
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt

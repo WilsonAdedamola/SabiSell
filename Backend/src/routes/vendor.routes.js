@@ -29,7 +29,9 @@ router.put('/onboarding', protect, upload.single('logo'), vendorController.compl
 // --- 2. DASHBOARD & UTILS ---
 router.get('/dashboard', protect, vendorController.getDashboardStats);
 router.get('/check-link', protect, vendorController.checkStoreLink);
-router.get('/profile', protect, vendorController.getVendorProfile); // Added to fetch settings on page load
+router.get('/profile', protect, vendorController.getVendorProfile); 
+router.get('/banks', protect, vendorController.getBanks); 
+router.get('/verify-account', protect, vendorController.verifyBankAccount);
 
 // --- 3. SETTINGS UPGRADE ---
 /**
