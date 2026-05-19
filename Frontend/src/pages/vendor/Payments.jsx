@@ -21,6 +21,9 @@ const Payments = () => {
   const [verifyError, setVerifyError] = useState("");
   const [isVerified, setIsVerified] = useState(false);
 
+  // Track the initially loaded data so we don't aggressively re-verify
+  const [initialBankData, setInitialBankData] = useState(null);
+
   const [formData, setFormData] = useState({
     bankCode: "",
     bankName: "",
@@ -31,7 +34,7 @@ const Payments = () => {
   const [passFeeToCustomer, setPassFeeToCustomer] = useState(false);
   const [vendorPlan, setVendorPlan] = useState("FREE");
 
-// Initial Fetch (Profile + Banks)
+  // Initial Fetch (Profile + Banks)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,15 +55,24 @@ const Payments = () => {
         
         // Find matching bank code if vendor already has a saved bank name
         const savedBank = uniqueBanks.find(b => b.name === vendor.bankName);
+        const fetchedBankCode = savedBank?.code || "";
         
         setFormData({
-          bankCode: savedBank?.code || "",
+          bankCode: fetchedBankCode,
           bankName: vendor.bankName || "",
           accountNumber: vendor.accountNumber || "",
           accountName: vendor.accountName || "",
         });
         
-        if (vendor.accountName) setIsVerified(true);
+        if (vendor.accountName) {
+          setIsVerified(true);
+          // Save these exact values to state to prevent re-verification on load
+          setInitialBankData({ 
+            accountNumber: vendor.accountNumber, 
+            bankCode: fetchedBankCode 
+          });
+        }
+        
         setVendorPlan(vendor.plan || "FREE");
       } catch (error) {
         console.error("Failed to load payment settings:", error);
@@ -75,6 +87,15 @@ const Payments = () => {
   // Auto-Verify Effect
   useEffect(() => {
     const verifyAccount = async () => {
+      // If the input perfectly matches the valid database data, DO NOTHING!
+      if (
+        initialBankData && 
+        formData.accountNumber === initialBankData.accountNumber && 
+        formData.bankCode === initialBankData.bankCode
+      ) {
+        return; 
+      }
+
       if (formData.accountNumber.length === 10 && formData.bankCode) {
         setIsVerifying(true);
         setVerifyError("");
@@ -105,7 +126,7 @@ const Payments = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.accountNumber, formData.bankCode]);
+  }, [formData.accountNumber, formData.bankCode, initialBankData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -131,6 +152,7 @@ const Payments = () => {
     
     try {
       const submitData = new FormData();
+      submitData.append("bankCode", formData.bankCode);
       submitData.append("bankName", formData.bankName);
       submitData.append("accountNumber", formData.accountNumber);
       submitData.append("accountName", formData.accountName);
@@ -141,11 +163,16 @@ const Payments = () => {
 
       setSuccessMessage("Bank details securely updated and linked for automated payouts.");
       setToast({ message: "Bank details saved successfully.", type: "success" });
+      
+      // Update our initial tracking data so it doesn't re-verify after saving
+      setInitialBankData({
+        accountNumber: formData.accountNumber,
+        bankCode: formData.bankCode
+      });
 
       setTimeout(() => setSuccessMessage(""), 5000);
     } catch (error) {
       console.error("Failed to save bank details:", error);
-      alert("Failed to save bank details. Please try again.");
       setToast({ message: "Failed to save bank details. Please try again.", type: "error" });
     } finally {
       setIsSaving(false);
