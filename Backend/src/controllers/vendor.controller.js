@@ -200,10 +200,10 @@ exports.updateVendorSettings = async (req, res) => {
       storeName, storeCategory, storeDescription, storeLink,
       phone, whatsapp, email, instagram, facebook, twitter, tiktok, snapchat,
       themeColor, hasBanner, bannerTitle, bannerSubtitle, bannerDiscount,
-      enableSlideshow, // NEW
-      enableSecondaryBanner, secondaryBannerTitle, secondaryBannerDesc, // NEW
+      enableSlideshow,
+      enableSecondaryBanner, secondaryBannerTitle, secondaryBannerDesc,
       businessName, cacNumber, businessAddress, showBusinessDetails,
-      bankName, accountNumber, accountName, deliveryFee, deliveryTime,
+      bankName, accountNumber, accountName, bankCode, deliveryFee, deliveryTime,
       isOnline
     } = req.body;
 
@@ -293,11 +293,11 @@ exports.updateVendorSettings = async (req, res) => {
       bannerTitle,
       bannerSubtitle,
       bannerDiscount,
-      enableSlideshow: parsedEnableSlideshow, // NEW
-      slideshowImages: finalSlideshowImages, // NEW
-      enableSecondaryBanner: parsedEnableSecondaryBanner, // NEW
-      secondaryBannerTitle, // NEW
-      secondaryBannerDesc, // NEW
+      enableSlideshow: parsedEnableSlideshow,
+      slideshowImages: finalSlideshowImages,
+      enableSecondaryBanner: parsedEnableSecondaryBanner,
+      secondaryBannerTitle,
+      secondaryBannerDesc,
       businessName,
       cacNumber,
       businessAddress,
@@ -305,6 +305,7 @@ exports.updateVendorSettings = async (req, res) => {
       bankName,
       accountNumber,
       accountName,
+      bankCode,
       deliveryFee: parsedDeliveryFee,
       deliveryTime,
       isOnline: parsedIsOnline,
@@ -372,6 +373,7 @@ exports.verifyBankAccount = async (req, res) => {
     // Paystack returns { status: true, message: "Account number resolved", data: { account_name, account_number, bank_id } }
     res.status(200).json(response.data);
   } catch (error) {
+    console.error("🚨 PAYSTACK VERIFY ERROR:", error.response?.data || error.message);
     // If Paystack can't find the account, it throws a 422 or 400 error
     res.status(400).json({ message: "Could not verify account details. Check the number and bank." });
   }

@@ -20,6 +20,7 @@ const orderRoutes = require('./routes/order.routes');
 const storefrontRoutes = require('./routes/storefront.routes');
 const categoryRoutes = require('./routes/category.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -30,6 +31,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/storefront', storefrontRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // A simple test route
 // app.get('/api/health', (req, res) => {

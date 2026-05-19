@@ -60,9 +60,10 @@ model Vendor {
 
   // Payment Details
   bankName            String?
+  bankCode               String?
   accountNumber       String?
   accountName         String?
-  paystackSubaccount  String?
+  paystackSubaccountCode  String?
 
   // Delivery Settings
   deliveryFee         Decimal?  @db.Decimal(10, 2)
@@ -156,7 +157,8 @@ model Order {
   
   deliveryMethod   String    @default("negotiated")
   paymentMethod    String?   
-  paymentStatus    String    @default("UNPAID")   
+  paymentReference String? 
+  paymentStatus    String    @default("UNPAID")  
   status           String    @default("PENDING")  
   customerNote     String?
   

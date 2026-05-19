@@ -10,6 +10,21 @@ import {
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
 
+// Helper function to dynamically load the Paystack script
+const loadPaystackScript = () => {
+  return new Promise((resolve) => {
+    if (window.PaystackPop) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const Checkout = () => {
   const { fallbackStoreLink } = useParams();
   const navigate = useNavigate();
@@ -123,7 +138,7 @@ const Checkout = () => {
   useEffect(() => {
     if (currentStep === 3) {
       const processOrder = async () => {
-        try {
+       try {
           const isIntl = formData.country === "International Shipping";
 
           const orderPayload = {
@@ -155,8 +170,58 @@ const Checkout = () => {
             paymentMethod: paymentMethod 
           };
 
-          const response = await api.post(`/storefront/${storeSlug}/checkout`, orderPayload);
+         const response = await api.post(`/storefront/${storeSlug}/checkout`, orderPayload);
 
+          // --- STRICT PAYSTACK POPUP LOGIC ---
+          if (paymentMethod === 'paystack') {
+            
+            // If the backend forgot to send the access code, stop right here!
+            if (!response.data.access_code || !response.data.publicKey) {
+              throw new Error("Backend failed to return Paystack access code or public key.");
+            }
+            
+            // 1. Load the Paystack popup script
+            const isLoaded = await loadPaystackScript();
+            if (!isLoaded) {
+              throw new Error("Failed to load Paystack. Please check your internet connection.");
+            }
+
+            // 2. Configure and open the beautiful popup
+            const handler = window.PaystackPop.setup({
+              key: response.data.publicKey, //from the backend
+              email: formData.email,
+              amount: total * 100,
+              ref: response.data.reference,
+              // channels: ['card', 'bank_transfer', 'bank', 'ussd', 'qr'],
+              access_code: response.data.access_code,
+              onClose: () => {
+                // If they click the 'X' to close the popup without paying
+                setCheckoutError("Payment was cancelled. You can try again when you're ready.");
+                setCurrentStep(2); // Send them back to the form
+              },
+              callback: (paystackResponse) => {
+                // SUCCESS! The money has been processed and split.
+                setMockOrder({
+                  orderNumber: response.data.order?.orderNumber,
+                  email: formData.email,
+                  address: isIntl 
+                    ? "International Shipping (Pending Address)" 
+                    : `${formData.address}, ${formData.city}, ${formData.state}`,
+                  total: total,
+                  deliveryMethodName: deliveryOptions[deliveryMethod].name,
+                  deliveryEta: deliveryOptions[deliveryMethod].eta
+                });
+                
+                clearCart();
+                setCurrentStep(4); // Redirect to the Confetti success page
+              }
+            });
+
+            handler.openIframe(); // Launch the paystack popup
+            return;
+          }
+
+          // --- MANUAL BANK TRANSFER LOGIC (Runs if Paystack wasn't chosen) ---
           setMockOrder({
             orderNumber: response.data.order?.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
             email: formData.email || "No email provided",
@@ -173,7 +238,7 @@ const Checkout = () => {
 
         } catch (error) {
           console.error("Checkout processing failed:", error);
-          setCheckoutError(error.response?.data?.message || "Something went wrong processing your order. Please check your connection and try again.");
+          setCheckoutError(error.response?.data?.message || "Something went wrong processing your order. Please try again.");
           setCurrentStep(2); 
         }
       };

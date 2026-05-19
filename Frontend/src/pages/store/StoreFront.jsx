@@ -308,10 +308,13 @@ const Storefront = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12">
-              {filteredProducts.map((product) => {
+             {filteredProducts.map((product) => {
                 const cartItem = cart.find(i => i.id === product.id);
                 const qty = cartItem ? cartItem.cartQuantity : 0;
+                
+                // --- NEW: Added Low Stock Logic ---
                 const isOutOfStock = product.stockQuantity === 0;
+                const isLowStock = !isOutOfStock && product.stockQuantity > 0 && product.stockQuantity < 5; 
 
                 return (
                   <div key={product.id} className="flex flex-col group">
@@ -335,9 +338,17 @@ const Storefront = () => {
                         )}
                       </Link>
                       
-                      <button className="absolute bottom-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-500">
+                      {/* Moved Heart to top-right to prevent overlap */}
+                      <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-500">
                         <Heart className="w-4 h-4" />
                       </button>
+
+                      {/* --- NEW: Low Stock Text (Bottom Right) --- */}
+                      {isLowStock && (
+                        <div className="absolute bottom-3 right-3 bg-white/95 text-orange-600 border border-orange-100 text-[10px] font-extrabold px-2 py-1 uppercase tracking-wider rounded shadow-sm pointer-events-none">
+                          Low Stock
+                        </div>
+                      )}
                     </div>
                     
                     <Link to={`${basePath}/product/${product.id}`}>
@@ -356,9 +367,14 @@ const Storefront = () => {
                     </div>
 
                     <div className="flex items-center justify-between mt-auto">
-                       <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium">
-                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.8
-                       </div>
+                       {/* COMMENTED OUT STAR RATING FOR NOW 
+                         <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium">
+                           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.8
+                         </div> 
+                       */}
+                       
+                       {/* Empty div to keep the Add To Cart buttons pushed to the right */}
+                       <div /> 
                        
                        {!isOutOfStock && qty === 0 && (
                           <button 
