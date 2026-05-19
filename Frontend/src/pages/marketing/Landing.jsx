@@ -20,10 +20,10 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-sabi-surface flex flex-col font-sans">
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <Header />
 
-      {/* --- MAIN CONTENT --- */}
+      {/* MAIN CONTENT */}
       <main className="grow flex flex-col bg-white">
         {/* 1. HERO SECTION */}
         <section className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden">
@@ -459,7 +459,7 @@ const Landing = () => {
         </section>
       </main>
 
-      {/* --- FOOTER --- */}
+      {/* FOOTER */}
       <Footer />  
     </div>
   );
