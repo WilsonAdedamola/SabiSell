@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
+import IG from '../../assets/social icons/instagram.png';
+import FB from '../../assets/social icons/facebook.png';
+import WA from '../../assets/social icons/whatsapp.png';
+import X from '../../assets/social icons/x.svg';
 
 const Footer = () => {
   return (
@@ -57,9 +61,15 @@ const Footer = () => {
             © {new Date().getFullYear()} SabiSell. All rights reserved.
           </div>
           <div className="flex space-x-6">
-            <a href="#" target="blank" className="text-gray-500 hover:text-white transition-colors">Instagram</a>
-            <a href="#" target="blank" className="text-gray-500 hover:text-white transition-colors">Facebook</a>
-            <a href="#" target="blank" className="text-gray-500 hover:text-white transition-colors">X</a>
+            <a href="https://instagram.com/sabisell" target="blank" className="text-gray-500 hover:text-white transition-colors">
+              <img src={IG} alt="Instagram" className="w-5 h-5" />
+            </a>
+            <a href="https://facebook.com/sabisell" target="blank" className="text-gray-500 hover:text-white transition-colors">
+              <img src={FB} alt="Facebook" className="w-5 h-5" />
+            </a>
+            <a href="https://x.com/sabisell" target="blank" className="text-gray-500 hover:text-white transition-colors">
+              <img src={X} alt="X" className="w-5 h-5" />
+            </a>
           </div>
         </div>
       </div>
