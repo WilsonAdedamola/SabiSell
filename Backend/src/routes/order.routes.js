@@ -7,7 +7,7 @@ const { protect } = require('../middlewares/auth.middleware');
 router.get('/', protect, orderController.getVendorOrders);
 
 // POST: Generate a dummy order (Testing only)
-router.post('/dummy', protect, orderController.createDummyOrder);
+// router.post('/dummy', protect, orderController.createDummyOrder);
 
 // PUT: Update order status (Requires the order ID in the URL)
 router.put('/:id/status', protect, orderController.updateOrderStatus);

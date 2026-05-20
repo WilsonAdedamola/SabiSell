@@ -39,6 +39,9 @@ import StoreNotFound from './pages/store/StoreNotFound';
 import Discounts from './pages/vendor/Discount';
 import StoreLink from './pages/vendor/StoreLink';
 import Payments from './pages/vendor/Payments';
+import Terms from './pages/legal/Terms';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import ContactUs from './pages/legal/ContactUs';
 
 
 // ROUTER 1: MAIN SAAS APP 
@@ -52,6 +55,11 @@ const mainRouter = createBrowserRouter([
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/verify-email", element: <VerifyEmail /> },
   { path: "*", element: <NotFound /> },
+
+// LEGAL PAGES
+  { path: "/terms", element: <Terms /> },
+  { path: "/privacy", element: <PrivacyPolicy /> },
+  { path: "/contact", element: <ContactUs /> },
 
   // VENDOR APP
   {
