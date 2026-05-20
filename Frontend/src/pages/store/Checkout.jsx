@@ -460,7 +460,7 @@ const Checkout = () => {
                   </div>
                 </section>
 
-                {/* 2. Contact Information (MOVED TO SECOND) */}
+                {/* 2. Contact Information */}
                 <section>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={themeStyle}>2</div>
@@ -581,6 +581,7 @@ const Checkout = () => {
                       </div>
                     </label>
 
+                    {/* TEMPORARILY DISABLED FOR LAUNCH - FORCING PAYSTACK PAYMENTS
                     <label 
                       className={`flex items-center justify-between w-full p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'transfer' ? 'bg-gray-50' : 'border-gray-200 bg-white'}`}
                       style={paymentMethod === 'transfer' ? borderThemeStyle : {}}
@@ -597,6 +598,7 @@ const Checkout = () => {
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400" />
                     </label>
+                    */}
                   </div>
                 </section>
 

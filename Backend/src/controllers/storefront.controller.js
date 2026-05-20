@@ -24,7 +24,7 @@ exports.getStoreByLink = async (req, res) => {
         bannerSubtitle: true,
         bannerDiscount: true,
 
-        // --- NEW: Premium Features ---
+        // --- Premium Features ---
         plan: true,
         enableSlideshow: true,
         slideshowImages: true,
@@ -144,7 +144,7 @@ exports.processCheckout = async (req, res) => {
 
         deliveryMethod,
         paymentMethod,
-        paymentStatus: "Unpaid", // Order is Unpaid until Paystack confirms
+        paymentStatus: "Unpaid", 
         status: "Pending",
 
         items: {
@@ -161,19 +161,18 @@ exports.processCheckout = async (req, res) => {
       },
     });
 
-    // --- 6. PAYSTACK SPLIT PAYMENT INITIALIZATION ---
+    // --- 6. PAYSTACK DYNAMIC SPLIT PAYMENT ---
     if (paymentMethod === "paystack") {
-      // Safety check: Does the vendor have a bank account saved?
       if (!vendor.accountNumber || !vendor.bankCode) {
         return res.status(400).json({
-          message:
-            "This vendor has not set up online payments yet. Please choose Bank Transfer.",
+          message: "This vendor has not set up online payments yet. Please choose Bank Transfer.",
         });
       }
 
       let subaccountCode = vendor.paystackSubaccountCode;
 
-      // Create a subaccount on the fly if they don't have one
+      // Create a subaccount if they don't have one
+      // We no longer care about the percentage_charge here because we override it below!
       if (!subaccountCode) {
         const subaccountRes = await axios.post(
           "https://api.paystack.co/subaccount",
@@ -181,14 +180,10 @@ exports.processCheckout = async (req, res) => {
             business_name: vendor.accountName,
             settlement_bank: vendor.bankCode,
             account_number: vendor.accountNumber,
-            percentage_charge: 3.0, // SabiSell Platform Fee
+            percentage_charge: 0.1, // Dummy value, gets ignored by transaction_charge
             description: `SabiSell Vendor: ${vendor.storeName || vendor.accountName}`,
           },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            },
-          },
+          { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
         );
 
         subaccountCode = subaccountRes.data.data.subaccount_code;
@@ -199,10 +194,30 @@ exports.processCheckout = async (req, res) => {
         });
       }
 
-      // Initialize the transaction
-      const amountInKobo = Math.round(totalAmount * 100);
+      // --- NEW: DYNAMIC FEE MATH ---
+      let sabiPlatformFee = 0; // The cut SabiSell takes (in Naira)
 
-      // Dynamically get the frontend URL for redirection after payment
+      if (vendor.plan === 'FREE') {
+        // Free: 3% of total (No Cap)
+        sabiPlatformFee = totalAmount * 0.03; 
+      } 
+      else if (vendor.plan === 'STARTER') {
+        // Starter: 1.5% of total, but CAPPED at ₦3,000 maximum
+        sabiPlatformFee = totalAmount * 0.015;
+        if (sabiPlatformFee > 3000) {
+          sabiPlatformFee = 3000; // Hit the ceiling!
+        }
+      }
+      else if (vendor.plan === 'GROWTH') {
+        // Growth: 0% Platform fee
+        sabiPlatformFee = 0; 
+      }
+
+      // Paystack requires charges in kobo (multiply by 100)
+      const transactionChargeKobo = Math.round(sabiPlatformFee * 100);
+      const amountInKobo = Math.round(totalAmount * 100);
+      // -----------------------------
+
       const frontendUrl = req.headers.origin || "http://localhost:5173";
 
       const paymentRes = await axios.post(
@@ -211,150 +226,40 @@ exports.processCheckout = async (req, res) => {
           email: customerEmail,
           amount: amountInKobo,
           reference: generatedOrderNumber,
-          subaccount: subaccountCode, // The split happens here
-          bearer: "subaccount",
-          callback_url: `${frontendUrl}/store/${slug}/checkout/success`, // Where Paystack redirects them after payment
+          subaccount: subaccountCode, 
+          
+          // 👇 THIS OVERRIDES THE SUBACCOUNT FEE AUTOMATICALLY 👇
+          transaction_charge: transactionChargeKobo, 
+          bearer: "subaccount", // The vendor bears Paystack's gateway fees
+          
+          callback_url: `${frontendUrl}/store/${slug}/checkout/success`, 
           metadata: {
             custom_fields: [
-              {
-                display_name: "Order Number",
-                variable_name: "order_number",
-                value: generatedOrderNumber,
-              },
-              {
-                display_name: "Vendor ID",
-                variable_name: "vendor_id",
-                value: vendor.id,
-              },
+              { display_name: "Order Number", variable_name: "order_number", value: generatedOrderNumber },
+              { display_name: "Vendor ID", variable_name: "vendor_id", value: vendor.id },
             ],
           },
         },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
       );
 
       console.log("PAYSTACK RESPONSE REFERENCE:", paymentRes.data.data.reference);
 
-      const updateResult = await prisma.order.update({
+      await prisma.order.update({
         where: { id: newOrder.id },
-        data: {
-          paymentReference: generatedOrderNumber,
-        },
+        data: { paymentReference: generatedOrderNumber },
       });
 
-      console.log("DATABASE SAVE RESULT:", updateResult);
-
-      // Return the Paystack URL to the frontend!
       return res.status(201).json({
         success: true,
         order: newOrder,
         access_code: paymentRes.data.data.access_code,
         reference: paymentRes.data.data.reference,
         publicKey: process.env.PAYSTACK_PUBLIC_KEY,
-        // authorization_url: paymentRes.data.data.authorization_url
       });
     }
   } catch (error) {
     console.error("CHECKOUT ERROR DETAILS:", error.response?.data || error);
-    res
-      .status(500)
-      .json({ message: "Server error processing order", error: error.message });
+    res.status(500).json({ message: "Server error processing order", error: error.message });
   }
 };
-
-// // @route   POST /api/storefront/:slug/checkout
-// // @desc    Process a buyer's cart and create a new order
-// exports.processCheckout = async (req, res) => { // <--- async is right here!
-//   try {
-//     const { slug } = req.params;
-
-//     const {
-//       customerName, customerEmail, customerPhone,
-//       shippingAddress, items, subtotal, deliveryFee,
-//       totalAmount, deliveryMethod, paymentMethod, customerNote
-//     } = req.body;
-
-//     // 1. Find the Vendor
-//     const vendor = await prisma.vendor.findUnique({
-//       where: { storeLink: slug }
-//     });
-
-//     if (!vendor) {
-//       return res.status(404).json({ message: 'Store not found' });
-//     }
-
-//     // 2. Check if customer exists in the CRM, or create them
-//     let customer = await prisma.customer.findFirst({
-//       where: { vendorId: vendor.id, email: customerEmail }
-//     });
-
-//     if (!customer) {
-//       customer = await prisma.customer.create({
-//         data: {
-//           vendorId: vendor.id,
-//           fullName: customerName,
-//           email: customerEmail,
-//           phone: customerPhone,
-//           address: shippingAddress?.city || "Online"
-//         }
-//       });
-//     }
-
-//     // 3. Generate Order Number
-//     const generatedOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-
-//     // 4. Create Order & Items in one transaction
-//     const newOrder = await prisma.order.create({
-//       data: {
-//         vendorId: vendor.id,
-//         customerId: customer.id,
-//         orderNumber: generatedOrderNumber,
-//         customerName,
-//         customerEmail,
-//         customerPhone,
-//         shippingAddress: shippingAddress || {},
-//         customerNote: customerNote || null,
-
-//         subtotal: parseFloat(subtotal) || 0,
-//         deliveryFee: parseFloat(deliveryFee) || 0,
-//         totalAmount: parseFloat(totalAmount) || 0,
-
-//         deliveryMethod,
-//         paymentMethod,
-//         status: 'Pending',
-
-//         items: {
-//           create: items.map(item => ({
-//             productId: String(item.productId),
-//             name: String(item.name),
-//             size: item.size ? String(item.size) : null,
-//             color: item.color ? String(item.color) : null,
-//             image: item.image ? String(item.image) : null,
-//             quantity: parseInt(item.quantity, 10),
-//             priceAtPurchase: parseFloat(item.price)
-//           }))
-//         }
-//       }
-//     });
-
-//     // 5. FIRE OFF THE NOTIFICATION TO THE VENDOR
-//     await prisma.notification.create({
-//       data: {
-//         vendorId: vendor.id,
-//         type: "order",
-//         title: "New Order Received 🎉",
-//         message: `You just received a new order (${generatedOrderNumber}) for ₦${parseFloat(totalAmount).toLocaleString()} from ${customerName}.`,
-//         link: "/dashboard/orders"
-//       }
-//     });
-
-//     res.status(201).json({ success: true, order: newOrder });
-
-//   } catch (error) {
-//     console.error("CHECKOUT ERROR DETAILS:", error);
-//     res.status(500).json({ message: 'Server error processing order', error: error.message });
-//   }
-// };
