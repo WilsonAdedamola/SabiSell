@@ -113,19 +113,19 @@ const NotFound = () => {
           </div>
 
           {/* Primary Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row w-full">
             <button
               onClick={() => navigate(-1)}
-              className="w-full sm:w-1/3 py-3.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-sm"
+              className="w-full py-3.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-sm"
             >
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
-            <Link
+            {/* <Link
               to="/"
               className="w-full sm:w-2/3 py-3.5 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-xl font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm"
             >
               Continue Shopping
-            </Link>
+            </Link> */}
           </div>
         </div>
       </main>

@@ -8,6 +8,7 @@ import StoreLayout from './layouts/StoreLayout';
 import Landing from './pages/marketing/Landing';
 import Pricing from './pages/marketing/Pricing';
 import FAQ from './pages/marketing/FAQ';
+import Features from './pages/marketing/Features';
 
 // 3. AUTH PAGES
 import Login from './pages/auth/Login';
@@ -50,6 +51,7 @@ const mainRouter = createBrowserRouter([
   { path: "/", element: <Landing /> },
   { path: "/pricing", element: <Pricing /> },
   { path: "/faq", element: <FAQ /> },
+  { path: "/features", element: <Features /> },
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },

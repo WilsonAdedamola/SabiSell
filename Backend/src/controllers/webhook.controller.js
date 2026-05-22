@@ -110,7 +110,7 @@ exports.paystackWebhook = async (req, res) => {
                     <h2 style="margin: 5px 0 0 0; color: #111827;">₦${paidOrder.totalAmount.toLocaleString()}</h2>
                   </div>
                   
-                  <p style="font-size: 14px; color: #4b5563;">We will contact you shortly. We will prepare your items for ${paidOrder.deliveryMethod} delivery.</p>
+                  <p style="font-size: 14px; color: #4b5563;">The vendor will contact you shortly. They will prepare your items and negotiate delivery.</p>
                   <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                   <a href="https://sabisell.vercel.app" style="font-size: 10px; color: #9ca3af; text-align: center;">Powered securely by SabiSell</a>
                 </div>

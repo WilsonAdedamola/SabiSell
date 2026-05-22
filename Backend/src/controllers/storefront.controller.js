@@ -144,7 +144,7 @@ exports.processCheckout = async (req, res) => {
 
         deliveryMethod,
         paymentMethod,
-        paymentStatus: "Unpaid", 
+        paymentStatus: "Unpaid",
         status: "Pending",
 
         items: {
@@ -165,14 +165,15 @@ exports.processCheckout = async (req, res) => {
     if (paymentMethod === "paystack") {
       if (!vendor.accountNumber || !vendor.bankCode) {
         return res.status(400).json({
-          message: "This vendor has not set up online payments yet. Please choose Bank Transfer.",
+          message:
+            "This vendor has not set up online payments yet. Please choose Bank Transfer.",
         });
       }
 
       let subaccountCode = vendor.paystackSubaccountCode;
 
       // Create a subaccount if they don't have one
-      // We no longer care about the percentage_charge here because we override it below!
+      // Percentage_charge overridden below
       if (!subaccountCode) {
         const subaccountRes = await axios.post(
           "https://api.paystack.co/subaccount",
@@ -183,7 +184,11 @@ exports.processCheckout = async (req, res) => {
             percentage_charge: 0.1, // Dummy value, gets ignored by transaction_charge
             description: `SabiSell Vendor: ${vendor.storeName || vendor.accountName}`,
           },
-          { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            },
+          },
         );
 
         subaccountCode = subaccountRes.data.data.subaccount_code;
@@ -194,29 +199,30 @@ exports.processCheckout = async (req, res) => {
         });
       }
 
-      // --- NEW: DYNAMIC FEE MATH ---
+      // DYNAMIC FEE MATH
       let sabiPlatformFee = 0; // The cut SabiSell takes (in Naira)
 
-      if (vendor.plan === 'FREE') {
-        // Free: 3% of total (No Cap)
-        sabiPlatformFee = totalAmount * 0.03; 
-      } 
-      else if (vendor.plan === 'STARTER') {
-        // Starter: 1.5% of total, but CAPPED at ₦3,000 maximum
-        sabiPlatformFee = totalAmount * 0.015;
-        if (sabiPlatformFee > 3000) {
-          sabiPlatformFee = 3000; // Hit the ceiling!
+      if (vendor.plan === "FREE") {
+        // Free: 3% of total, but CAPPED at 1500
+        sabiPlatformFee = totalAmount * 0.03;
+        if (sabiPlatformFee > 1500) {
+          sabiPlatformFee = 1500; // Hit the capped price
         }
-      }
-      else if (vendor.plan === 'GROWTH') {
+      } else if (vendor.plan === "STARTER") {
+        // Starter: 1.5% of total, but CAPPED at ₦1,000 maximum
+        sabiPlatformFee = totalAmount * 0.015;
+        if (sabiPlatformFee > 1000) {
+          sabiPlatformFee = 1000; // Hit the capped price
+        }
+      } else if (vendor.plan === "GROWTH") {
         // Growth: 0% Platform fee
-        sabiPlatformFee = 0; 
+        sabiPlatformFee = 0;
       }
 
       // Paystack requires charges in kobo (multiply by 100)
       const transactionChargeKobo = Math.round(sabiPlatformFee * 100);
       const amountInKobo = Math.round(totalAmount * 100);
-      // -----------------------------
+
 
       const frontendUrl = req.headers.origin || "http://localhost:5173";
 
@@ -226,24 +232,39 @@ exports.processCheckout = async (req, res) => {
           email: customerEmail,
           amount: amountInKobo,
           reference: generatedOrderNumber,
-          subaccount: subaccountCode, 
-          
+          subaccount: subaccountCode,
+
           // 👇 THIS OVERRIDES THE SUBACCOUNT FEE AUTOMATICALLY 👇
-          transaction_charge: transactionChargeKobo, 
+          transaction_charge: transactionChargeKobo,
           bearer: "subaccount", // The vendor bears Paystack's gateway fees
-          
-          callback_url: `${frontendUrl}/store/${slug}/checkout/success`, 
+
+          callback_url: `${frontendUrl}/store/${slug}/checkout/success`,
           metadata: {
             custom_fields: [
-              { display_name: "Order Number", variable_name: "order_number", value: generatedOrderNumber },
-              { display_name: "Vendor ID", variable_name: "vendor_id", value: vendor.id },
+              {
+                display_name: "Order Number",
+                variable_name: "order_number",
+                value: generatedOrderNumber,
+              },
+              {
+                display_name: "Vendor ID",
+                variable_name: "vendor_id",
+                value: vendor.id,
+              },
             ],
           },
         },
-        { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
+        },
       );
 
-      console.log("PAYSTACK RESPONSE REFERENCE:", paymentRes.data.data.reference);
+      console.log(
+        "PAYSTACK RESPONSE REFERENCE:",
+        paymentRes.data.data.reference,
+      );
 
       await prisma.order.update({
         where: { id: newOrder.id },
@@ -260,6 +281,8 @@ exports.processCheckout = async (req, res) => {
     }
   } catch (error) {
     console.error("CHECKOUT ERROR DETAILS:", error.response?.data || error);
-    res.status(500).json({ message: "Server error processing order", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Server error processing order", error: error.message });
   }
 };
