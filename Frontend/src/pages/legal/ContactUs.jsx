@@ -78,13 +78,13 @@ const ContactUs = () => {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+          <div className="bg-white p-8 rounded-4xl border border-gray-100 shadow-sm">
             {submitted ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-10">
                 <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
                   <Send className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Sent</h3>
                 <p className="text-gray-500">We've received your message and will get back to you within 24 hours.</p>
                 <button onClick={() => setSubmitted(false)} className="mt-6 text-[#044e3b] font-bold hover:underline">
                   Send another message

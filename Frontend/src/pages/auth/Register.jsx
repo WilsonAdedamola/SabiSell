@@ -419,7 +419,7 @@ const Register = () => {
                 <ChevronRight className="w-5 h-5" />
               </button>
 
-              <div className="relative flex items-center py-4">
+              {/* <div className="relative flex items-center py-4">
                 <div className="grow border-t border-gray-200"></div>
                 <span className="shrink-0 mx-4 text-gray-400 text-sm font-medium">
                   or sign up with
@@ -450,17 +450,17 @@ const Register = () => {
                   />
                 </svg>
                 Continue with Google
-              </button>
+              </button> */}
 
               <p className="text-center text-xs font-medium text-gray-500 mt-6">
                 By creating an account, you agree to our{" "}
-                <a href="#" className="text-sabi-primary hover:underline">
+                <Link to="/terms" className="text-sabi-primary hover:underline">
                   Terms of Service
-                </a>{" "}
+                </Link>{" "}
                 and{" "}
-                <a href="#" className="text-sabi-primary hover:underline">
+                <Link to="/privacy" className="text-sabi-primary hover:underline">
                   Privacy Policy
-                </a>
+                </Link>
                 .
               </p>
             </form>

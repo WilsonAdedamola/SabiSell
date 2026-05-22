@@ -172,10 +172,8 @@ const Checkout = () => {
 
          const response = await api.post(`/storefront/${storeSlug}/checkout`, orderPayload);
 
-          // --- STRICT PAYSTACK POPUP LOGIC ---
+          // PAYSTACK POPUP LOGIC
           if (paymentMethod === 'paystack') {
-            
-            // If the backend forgot to send the access code, stop right here!
             if (!response.data.access_code || !response.data.publicKey) {
               throw new Error("Backend failed to return Paystack access code or public key.");
             }
@@ -186,7 +184,7 @@ const Checkout = () => {
               throw new Error("Failed to load Paystack. Please check your internet connection.");
             }
 
-            // 2. Configure and open the beautiful popup
+            // 2. Configure and open popup
             const handler = window.PaystackPop.setup({
               key: response.data.publicKey, //from the backend
               email: formData.email,
@@ -200,7 +198,7 @@ const Checkout = () => {
                 setCurrentStep(2); // Send them back to the form
               },
               callback: (paystackResponse) => {
-                // SUCCESS! The money has been processed and split.
+                // SUCCESS
                 setMockOrder({
                   orderNumber: response.data.order?.orderNumber,
                   email: formData.email,
@@ -221,17 +219,17 @@ const Checkout = () => {
             return;
           }
 
-          // --- MANUAL BANK TRANSFER LOGIC (Runs if Paystack wasn't chosen) ---
-          setMockOrder({
-            orderNumber: response.data.order?.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-            email: formData.email || "No email provided",
-            address: isIntl 
-              ? "International Shipping (Pending Address)" 
-              : `${formData.address}, ${formData.city}, ${formData.state}`,
-            total: total,
-            deliveryMethodName: deliveryOptions[deliveryMethod].name,
-            deliveryEta: deliveryOptions[deliveryMethod].eta
-          });
+          // MANUAL BANK TRANSFER LOGIC (Runs if Paystack wasn't chosen)
+          // setMockOrder({
+          //   orderNumber: response.data.order?.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+          //   email: formData.email || "No email provided",
+          //   address: isIntl 
+          //     ? "International Shipping (Pending Address)" 
+          //     : `${formData.address}, ${formData.city}, ${formData.state}`,
+          //   total: total,
+          //   deliveryMethodName: deliveryOptions[deliveryMethod].name,
+          //   deliveryEta: deliveryOptions[deliveryMethod].eta
+          // });
           
           clearCart();
           setCurrentStep(4);
@@ -265,7 +263,7 @@ const Checkout = () => {
           recycle={false} 
           numberOfPieces={400} 
           gravity={0.2}
-          className="z-[100]"
+          className="z-100"
         />
       )}
 
