@@ -8,6 +8,7 @@ import StoreLayout from './layouts/StoreLayout';
 import Landing from './pages/marketing/Landing';
 import Pricing from './pages/marketing/Pricing';
 import FAQ from './pages/marketing/FAQ';
+import Features from './pages/marketing/Features';
 
 // 3. AUTH PAGES
 import Login from './pages/auth/Login';
@@ -42,7 +43,6 @@ import Payments from './pages/vendor/Payments';
 import Terms from './pages/legal/Terms';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import ContactUs from './pages/legal/ContactUs';
-import Features from './pages/marketing/features';
 
 
 // ROUTER 1: MAIN SAAS APP 
