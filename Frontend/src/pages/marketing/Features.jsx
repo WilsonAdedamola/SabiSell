@@ -15,7 +15,8 @@ import {
   Rocket,
   ArrowRight,
   Zap,
-  RefreshCcw
+  RefreshCcw,
+  CreditCardIcon
 } from "lucide-react";
 import Header from "../../components/shared/Header";
 import Footer from "../../components/shared/Footer";
@@ -81,9 +82,9 @@ const Features = () => {
       bg: "bg-orange-50",
     },
     {
-      icon: Users,
-      title: "Staff Accounts",
-      desc: "Don't do it alone. Invite team members to manage inventory or process orders without sharing your login details.",
+      icon: CreditCardIcon,
+      title: "Secure Payments",
+      desc: "All payments are securely processed through Paystack. Card payments, USSD, and bank transfers all with ease.",
       color: "text-pink-600",
       bg: "bg-pink-50",
     },
@@ -101,7 +102,7 @@ const Features = () => {
       <Header />
 
       <main className="grow flex flex-col bg-white">
-        {/* 1. HERO SECTION */}
+        {/* 1. HERO SECTION (Triggers immediately on load) */}
         <section className="relative pt-20 pb-16 lg:pt-28 lg:pb-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/40 to-white -z-10" />
           <motion.div 
@@ -135,7 +136,7 @@ const Features = () => {
             
             {/* Feature A: Storefront */}
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeLeft} className="w-full lg:w-1/2">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeLeft} className="w-full lg:w-1/2">
                 <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100">
                   <Store className="w-8 h-8 text-sabi-primary" />
                 </div>
@@ -153,10 +154,9 @@ const Features = () => {
                   ))}
                 </ul>
               </motion.div>
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeRight} className="w-full lg:w-1/2">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeRight} className="w-full lg:w-1/2">
                 <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-gray-50 rounded-[2.5rem] border border-gray-100 shadow-inner flex items-center justify-center p-8 relative overflow-hidden">
-                  {/* Mockup UI Placeholder */}
-                  <div className="absolute inset-x-12 -bottom-12 top-12 bg-white rounded-t-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+                  <div className="absolute inset-x-12 -bottom-12 top-12 bg-white rounded-t-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col hover:-translate-y-2 transition-transform duration-500">
                     <div className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-gray-50/50">
                       <div className="w-24 h-4 bg-gray-200 rounded-full"></div>
                       <div className="w-8 h-8 bg-emerald-100 rounded-full"></div>
@@ -174,7 +174,7 @@ const Features = () => {
 
             {/* Feature B: Payments (Reversed) */}
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeRight} className="w-full lg:w-1/2 lg:order-last">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeRight} className="w-full lg:w-1/2 lg:order-last">
                 <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 border border-blue-100">
                   <CreditCard className="w-8 h-8 text-blue-600" />
                 </div>
@@ -192,10 +192,9 @@ const Features = () => {
                   ))}
                 </ul>
               </motion.div>
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeLeft} className="w-full lg:w-1/2 lg:order-first">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeLeft} className="w-full lg:w-1/2 lg:order-first">
                 <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-gray-50 rounded-[2.5rem] border border-gray-100 shadow-inner flex items-center justify-center p-8 relative overflow-hidden">
-                   {/* Mockup UI Placeholder */}
-                   <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl border border-gray-100 p-6 z-10">
+                   <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl border border-gray-100 p-6 z-10 hover:-translate-y-2 transition-transform duration-500">
                       <div className="flex items-center justify-between mb-8">
                         <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Paystack</span>
                         <ShieldCheck className="w-6 h-6 text-emerald-500" />
@@ -219,7 +218,7 @@ const Features = () => {
 
             {/* Feature C: Inventory */}
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeLeft} className="w-full lg:w-1/2">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeLeft} className="w-full lg:w-1/2">
                 <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mb-6 border border-orange-100">
                   <Box className="w-8 h-8 text-orange-600" />
                 </div>
@@ -237,10 +236,9 @@ const Features = () => {
                   ))}
                 </ul>
               </motion.div>
-              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} variants={fadeRight} className="w-full lg:w-1/2">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeRight} className="w-full lg:w-1/2">
                 <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-gray-50 rounded-[2.5rem] border border-gray-100 shadow-inner flex items-center justify-center p-8 relative overflow-hidden">
-                   {/* Mockup UI Placeholder */}
-                   <div className="w-full max-w-sm space-y-4">
+                   <div className="w-full max-w-sm space-y-4 hover:-translate-y-2 transition-transform duration-500">
                       {[
                         { title: "Classic White Sneaker", stock: "12 in stock", status: "text-emerald-600 bg-emerald-50" },
                         { title: "Vintage Denim Jacket", stock: "2 in stock", status: "text-orange-600 bg-orange-50" },
@@ -265,13 +263,14 @@ const Features = () => {
         {/* 3. THE KITCHEN SINK (GRID) */}
         <section className="py-24 bg-gray-50 border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center max-w-3xl mx-auto mb-16">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeUp} className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Everything else you need.</h2>
               <p className="text-lg text-gray-600">We didn't cut any corners. Your SabiSell dashboard is packed with enterprise-grade features simplified for everyday use.</p>
             </motion.div>
 
+            {/* Notice amount: 0.2 here so tall grids still trigger on mobile screens */}
             <motion.div 
-              variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }}
+              variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
             >
               {gridFeatures.map((feat, idx) => (
@@ -289,7 +288,10 @@ const Features = () => {
 
         {/* 4. SECURITY & TECH HIGHLIGHT */}
         <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeUp}
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          >
             <div className="bg-[#044e3b] rounded-[3rem] p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden relative">
                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-400 opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                
@@ -307,7 +309,6 @@ const Features = () => {
                </div>
                
                <div className="md:w-1/2 z-10 w-full flex justify-center lg:justify-end">
-                 {/* Visual representation of tech stack or security badge */}
                  <div className="w-48 h-48 sm:w-64 sm:h-64 border-[8px] border-emerald-800/30 rounded-full flex items-center justify-center relative">
                     <div className="w-32 h-32 sm:w-44 sm:h-44 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)]">
                       <ShieldCheck className="w-16 h-16 sm:w-20 sm:h-20 text-white" />
@@ -315,12 +316,12 @@ const Features = () => {
                  </div>
                </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
-        {/* 5. BOTTOM CTA BANNER (Consistent with FAQ/Landing) */}
+        {/* 5. BOTTOM CTA BANNER */}
         <motion.section 
-          initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}
+          initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeUp}
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-20"
         >
           <div className="bg-[#044e3b] rounded-4xl px-6 py-10 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
