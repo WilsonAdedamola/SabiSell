@@ -43,6 +43,9 @@ import Payments from './pages/vendor/Payments';
 import Terms from './pages/legal/Terms';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import ContactUs from './pages/legal/ContactUs';
+import HowItWorks from './pages/marketing/HowItWorks';
+import SuccessStories from './pages/marketing/SuccessStories';
+import Waitlist from './pages/marketing/Waitlist';
 
 
 // ROUTER 1: MAIN SAAS APP 
@@ -52,6 +55,9 @@ const mainRouter = createBrowserRouter([
   { path: "/pricing", element: <Pricing /> },
   { path: "/faq", element: <FAQ /> },
   { path: "/features", element: <Features /> },
+  { path: "/how-it-works", element: <HowItWorks /> },
+  { path: "/success-stories", element: <SuccessStories /> },
+  { path: "/waitlist", element: <Waitlist /> },
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },

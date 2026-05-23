@@ -3,7 +3,7 @@ import Logo from "./Logo";
 import IG from '../../assets/social icons/instagram.png';
 import FB from '../../assets/social icons/facebook.png';
 import WA from '../../assets/social icons/whatsapp.png';
-import X from '../../assets/social icons/x.svg';
+import X from '../../assets/social icons/x.png';
 
 const Footer = () => {
   return (
