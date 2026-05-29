@@ -56,7 +56,7 @@ const mainRouter = createBrowserRouter([
   { path: "/faq", element: <FAQ /> },
   { path: "/features", element: <Features /> },
   { path: "/how-it-works", element: <HowItWorks /> },
-  { path: "/success-stories", element: <SuccessStories /> },
+  // { path: "/success-stories", element: <SuccessStories /> },
   { path: "/waitlist", element: <Waitlist /> },
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
