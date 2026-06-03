@@ -7,10 +7,6 @@ const StoreNotFound = () => {
         
         {/* LEFT / TOP: 3D Illustration */}
         <div className="w-full max-w-[280px] sm:max-w-sm md:max-w-md shrink-0">
-          {/* 
-            Replace this placeholder image src with the actual exported 3D asset from your design. 
-            The drop-shadow helps ground it nicely against the background.
-          */}
           <img 
             src={storeNotFoundImg} 
             alt="Store Not Found" 

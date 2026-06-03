@@ -54,6 +54,20 @@ const Features = () => {
   // --- Grid Features Data ---
   const gridFeatures = [
     {
+      icon: BarChart3,
+      title: "Advanced Analytics",
+      desc: "Know your numbers. Track total sales, top-performing products, and customer behavior right from your dashboard.",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+    {
+      icon: CreditCardIcon,
+      title: "Secure Payments",
+      desc: "All payments are securely processed through Paystack. Card payments, USSD, and bank transfers all with ease.",
+      color: "text-pink-600",
+      bg: "bg-pink-50",
+    },
+    {
       icon: MessageCircle,
       title: "WhatsApp Integration",
       desc: "Connect directly with your buyers. Customers can send inquiries straight to your WhatsApp from any product page.",
@@ -70,23 +84,9 @@ const Features = () => {
     {
       icon: TicketPercent,
       title: "Discounts & Promos",
-      desc: "Run flash sales, create percentage discounts, or offer fixed-amount promo codes to drive more sales.",
+      desc: "Run flash sales, create percentage discounts, or offer fixed-amount promo codes to drive more sales (coming soon).",
       color: "text-purple-600",
       bg: "bg-purple-50",
-    },
-    {
-      icon: BarChart3,
-      title: "Advanced Analytics",
-      desc: "Know your numbers. Track total sales, top-performing products, and customer behavior right from your dashboard.",
-      color: "text-orange-600",
-      bg: "bg-orange-50",
-    },
-    {
-      icon: CreditCardIcon,
-      title: "Secure Payments",
-      desc: "All payments are securely processed through Paystack. Card payments, USSD, and bank transfers all with ease.",
-      color: "text-pink-600",
-      bg: "bg-pink-50",
     },
     {
       icon: RefreshCcw,

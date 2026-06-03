@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles,
   CheckCircle2,
   Ticket,
   Copy,
@@ -15,7 +14,7 @@ import {
   Rocket,
   Shirt,
   Laptop,
-  DownloadCloud,
+  ShoppingBag,
   ChevronDown,
   HelpCircle,
   TrendingUp
@@ -92,7 +91,7 @@ const Waitlist = () => {
     },
     {
       q: "Can I use SabiSell to sell physical products?",
-      a: "Yes. SabiSell is designed specifically for African entrepreneurs selling physical goods (like fashion, electronics, and beauty products), but it works just as well for digital downloads and services."
+      a: "Yes. SabiSell is designed specifically for Nigerian entrepreneurs selling physical goods like fashion, electronics, cosmetics, and everyday retail items."
     }
   ];
 
@@ -128,7 +127,6 @@ const Waitlist = () => {
       {/* PRE-LAUNCH HEADER */}
       <header className="absolute top-0 left-0 w-full z-40 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Shared Logo Format */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#044e3b] rounded-lg flex items-center justify-center">
               <Store className="w-5 h-5 text-white" />
@@ -148,16 +146,17 @@ const Waitlist = () => {
       <main className="grow">
         {/* 1. HERO SECTION */}
         <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-50/80 via-white to-purple-50/40 -z-10" />
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 -z-10" />
-          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 -z-10" />
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-emerald-50/60 to-white -z-10" />
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 -z-10" />
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <motion.div variants={staggerContainer} initial="hidden" animate="show">
-              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-bold border border-purple-200 mb-8 shadow-sm">
-                <Sparkles className="w-4 h-4" /> Launching Soon in Africa
-              </motion.div>
+              
+              <motion.p variants={fadeUp} className="text-[#044e3b] font-bold tracking-[0.2em] uppercase text-xs mb-8 flex items-center justify-center gap-3">
+                <span className="w-8 h-px bg-[#044e3b]/30"></span>
+                LAUNCHING SOON IN NIGERIA
+                <span className="w-8 h-px bg-[#044e3b]/30"></span>
+              </motion.p>
               
               <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 leading-[1.1] tracking-tight mb-8">
                 The easiest way to <br className="hidden sm:block" />
@@ -183,7 +182,7 @@ const Waitlist = () => {
           </div>
         </section>
 
-        {/* 2. EXPLAINER GRID (Why join early?) */}
+        {/* 2. EXPLAINER GRID */}
         <section className="py-24 bg-white border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeUp} className="text-center max-w-3xl mx-auto mb-16">
@@ -219,8 +218,8 @@ const Waitlist = () => {
         <section className="py-24 bg-gray-50 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} variants={fadeUp} className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Built for African Entrepreneurs.</h2>
-              <p className="text-lg text-gray-600">No matter what you sell, SabiSell provides the perfect infrastructure to help you scale.</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Built for Nigerian Entrepreneurs.</h2>
+              <p className="text-lg text-gray-600">SabiSell provides the perfect infrastructure to help retail and e-commerce businesses scale.</p>
             </motion.div>
 
             <motion.div 
@@ -230,7 +229,7 @@ const Waitlist = () => {
               {[
                 { icon: Shirt, title: "Fashion & Beauty", color: "text-pink-600", bg: "bg-pink-100", desc: "Manage variations easily. Let customers choose sizes and colors before adding to cart." },
                 { icon: Laptop, title: "Gadgets & Electronics", color: "text-blue-600", bg: "bg-blue-100", desc: "Build trust with professional listings, detailed specifications, and secure checkout." },
-                { icon: DownloadCloud, title: "Digital Products", color: "text-purple-600", bg: "bg-purple-100", desc: "Sell ebooks, templates, or courses with automated delivery the moment payment clears." }
+                { icon: ShoppingBag, title: "Everyday Retail & More", color: "text-orange-600", bg: "bg-orange-100", desc: "Groceries, home decor, handmade crafts, or automobile parts. If you can box it, you can sell it." }
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center text-center">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${item.bg}`}>
@@ -305,10 +304,12 @@ const Waitlist = () => {
             >
               Join the VIP Waitlist <ArrowRight className="w-5 h-5" />
             </button>
-            <div className="flex justify-center items-center gap-4 mt-12 opacity-70 grayscale">
-              <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Secured By</span>
-              <ShieldCheck className="w-6 h-6 text-gray-800" />
-              <span className="text-xl font-black text-gray-800 tracking-tight -ml-2">paystack</span>
+            
+            {/* Ultra-subtle Paystack badge */}
+            <div className="flex justify-center items-center gap-2 mt-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-300">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Secured By</span>
+              <ShieldCheck className="w-3 h-3 text-gray-800" />
+              <span className="text-sm font-black text-gray-800 tracking-tight">paystack</span>
             </div>
           </motion.div>
         </section>
@@ -341,7 +342,7 @@ const Waitlist = () => {
               {/* Modal Content */}
               <motion.div 
                 variants={modalContent} initial="hidden" animate="show" exit="hidden"
-                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+                onClick={(e) => e.stopPropagation()}
                 className="bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-2xl border border-gray-100 relative overflow-hidden w-full max-w-md my-auto"
               >
                 {/* Close Button */}
@@ -363,9 +364,10 @@ const Waitlist = () => {
                       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}
                     >
                       <div className="mb-8 pt-4">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-4">
-                          <Ticket className="w-3.5 h-3.5" /> ₦18,998 Reward Value
-                        </div>
+                        {/* Refined the pill here too for consistency */}
+                        <p className="text-[#044e3b] font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+                          <Ticket className="w-4 h-4" /> ₦18,998 Reward Value
+                        </p>
                         <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Secure Your Spot</h2>
                         <p className="text-gray-500 text-sm">Enter your details to generate your VIP reward code for 2 free months of Growth Plan.</p>
                       </div>

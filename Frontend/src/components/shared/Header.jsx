@@ -9,6 +9,7 @@ const Header = () => {
 
   // Notice the paths include '/' so hash links work from any page
   const navLinks = [
+    { name: "Home", path: "/" },
     { name: "Features", path: "/features" },
     { name: "How It Works", path: "/how-it-works" },
     { name: "Pricing", path: "/pricing" },

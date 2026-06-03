@@ -5,7 +5,7 @@ import {
   BarChart2, Tag, QrCode, CreditCard, Settings, HelpCircle,
   Search, Bell, ExternalLink, Menu, X, Plus,
   ChevronRight, Rocket, MessageCircle,
-  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut, PiggyBank
+  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut, PiggyBank, Brackets
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
 import ConfirmModal from "../components/shared/ConfirmModal"; 
@@ -16,7 +16,7 @@ const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   
-  // --- MODAL & NOTIFICATION STATES ---
+  // MODAL & NOTIFICATION STATES
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   
@@ -69,7 +69,7 @@ const VendorLayout = () => {
     return () => window.removeEventListener('storage', fetchVendorData);
   }, []);
 
-  // --- FETCH STATS & NOTIFICATIONS ---
+  // FETCH STATS & NOTIFICATIONS
   useEffect(() => {
     const fetchSidebarData = async () => {
       try {
@@ -88,7 +88,7 @@ const VendorLayout = () => {
           orders: activeOrders.length 
         });
 
-        // Set Real Notifications
+        // Set Notifications
         if (notifRes.data.notifications) {
           setNotifications(notifRes.data.notifications);
         }
@@ -103,7 +103,7 @@ const VendorLayout = () => {
     }
   }, [location.pathname, vendorData.storeLink]); 
 
-  // --- NOTIFICATION ACTIONS ---
+  // NOTIFICATION ACTIONS
   const markAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`); // Update DB
@@ -122,7 +122,7 @@ const VendorLayout = () => {
     }
   };
 
-  // --- UI STATE FLAGS ---
+  // UI STATE FLAGS
   const isStoreCreated = Boolean(vendorData?.storeLink); 
   const hasStore = vendorData.isOnline && vendorData.storeName;
   const displayName = hasStore ? vendorData.storeName : vendorData.name;
@@ -168,6 +168,7 @@ const VendorLayout = () => {
       { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
     ]},
     { section: "SALES & MARKETING", items: [
+      { name: "Sales Record", icon: Brackets, path: "/dashboard/record" },
       { name: "Discounts & Coupons", icon: Tag, path: "/dashboard/discounts" },
       { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/store-link" },
     ]},
@@ -302,7 +303,7 @@ const VendorLayout = () => {
 
       </div>
 
-      {isStoreCreated && !collapsed && (
+      {/* {isStoreCreated && !collapsed && (
         <div className="p-4 shrink-0 border-t border-gray-100 transition-all duration-300">
           <div className="bg-emerald-50 rounded-2xl p-4 relative overflow-hidden">
              <div className="flex items-start gap-3 relative z-10">
@@ -319,14 +320,14 @@ const VendorLayout = () => {
              </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 
   return (
     <div className="flex h-screen bg-gray-50/50 font-sans overflow-hidden">
       
-      {/* --- DYNAMIC NOTIFICATION MODAL --- */}
+      {/* DYNAMIC NOTIFICATION MODAL */}
       <NotificationModal 
         isOpen={isNotifOpen} 
         onClose={() => setIsNotifOpen(false)} 

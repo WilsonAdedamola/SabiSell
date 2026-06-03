@@ -6,14 +6,16 @@ import {
   FolderOpen, Archive, CheckCircle2, XCircle, Lock
 } from "lucide-react";
 import api from '../../utils/api';
-// NEW: Import the Confirm Modal
 import ConfirmModal from '../../components/shared/ConfirmModal';
 import { ProductsSkeleton } from "../../components/shared/Skeletons";
+import Toast from "../../components/shared/Toast";
 
 const Products = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  
+  // Custom Toast State
+  const [toast, setToast] = useState(null);
 
   // Main Views
   const [activeMainTab, setActiveMainTab] = useState("products"); 
@@ -54,10 +56,11 @@ const Products = () => {
         const catRes = await api.get('/categories');
         setCategories(catRes.data.categories || []);
       } catch (e) {
-        setCategories([]); // Fallback to empty if it fails
+        setCategories([]); 
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
+      setToast({ message: "Failed to load data.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -68,15 +71,21 @@ const Products = () => {
     if (!productToDelete) return;
     setIsDeleting(true);
     try {
-      await api.delete(`/products/${productToDelete.id}`);
-      setProducts(products.filter(p => p.id !== productToDelete.id));
-      setMessage({ type: "success", text: "Product deleted successfully." });
+      // Safely grab the ID whether it is structured as id or _id
+      const productId = productToDelete._id || productToDelete.id;
+      
+      await api.delete(`/products/${productId}`);
+      
+      // Update UI state
+      setProducts(products.filter(p => (p._id || p.id) !== productId));
+      
+      // Trigger custom toast
+      setToast({ message: "Product deleted successfully.", type: "success" });
     } catch (error) {
-      setMessage({ type: "error", text: "Failed to delete product." });
+      setToast({ message: error.response?.data?.message || "Failed to delete product.", type: "error" });
     } finally {
       setIsDeleting(false);
       setProductToDelete(null);
-      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     }
   };
 
@@ -103,24 +112,19 @@ const Products = () => {
     filteredProducts = filteredProducts.filter(p => p.status === 'DRAFT');
   }
 
-  // --- NEW FIXED CATEGORY LOGIC ---
+  // --- CATEGORY LOGIC ---
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
     
     try {
-      // 1. Send the new category to the backend
       const response = await api.post('/categories', { name: newCategoryName });
-      
-      // 2. Update the screen using the real data from the backend
       setCategories([...categories, response.data.category]); 
       setNewCategoryName("");
-      setMessage({ type: "success", text: "Category added." });
+      setToast({ message: "Category added.", type: "success" });
     } catch (error) {
       console.error(error);
-      setMessage({ type: "error", text: error.response?.data?.message || "Failed to add category." });
-    } finally {
-      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+      setToast({ message: error.response?.data?.message || "Failed to add category.", type: "error" });
     }
   };
 
@@ -128,17 +132,14 @@ const Products = () => {
     if (!editingCategory.name.trim()) return;
     
     try {
-      // 1. Send the update to the backend
-      await api.put(`/categories/${editingCategory.id}`, { name: editingCategory.name });
+      const categoryId = editingCategory._id || editingCategory.id;
+      await api.put(`/categories/${categoryId}`, { name: editingCategory.name });
       
-      // 2. Update the screen
-      setCategories(categories.map(c => c.id === editingCategory.id ? editingCategory : c));
+      setCategories(categories.map(c => (c._id || c.id) === categoryId ? editingCategory : c));
       setEditingCategory(null);
-      setMessage({ type: "success", text: "Category updated." });
+      setToast({ message: "Category updated.", type: "success" });
     } catch (error) {
-      setMessage({ type: "error", text: "Failed to update category." });
-    } finally {
-      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+      setToast({ message: "Failed to update category.", type: "error" });
     }
   };
 
@@ -146,24 +147,33 @@ const Products = () => {
     if (!categoryToDelete) return;
     setIsDeleting(true);
     try {
-      // 1. Delete from backend
-      await api.delete(`/categories/${categoryToDelete.id}`);
+      const categoryId = categoryToDelete._id || categoryToDelete.id;
+      await api.delete(`/categories/${categoryId}`);
       
-      // 2. Update the screen
-      setCategories(categories.filter(c => c.id !== categoryToDelete.id));
-      setMessage({ type: "success", text: "Category deleted." });
+      setCategories(categories.filter(c => (c._id || c.id) !== categoryId));
+      setToast({ message: "Category deleted.", type: "success" });
     } catch (error) {
-      setMessage({ type: "error", text: "Failed to delete category." });
+      setToast({ message: "Failed to delete category.", type: "error" });
     } finally {
       setIsDeleting(false);
       setCategoryToDelete(null);
-      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     }
   };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
       
+      {/* ------------------------------------------------------------------------ */}
+      {/* CUSTOM TOAST COMPONENT */}
+      {/* ------------------------------------------------------------------------ */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+
       {/* ------------------------------------------------------------------------ */}
       {/* MODALS */}
       {/* ------------------------------------------------------------------------ */}
@@ -186,7 +196,6 @@ const Products = () => {
         confirmText="Delete Category"
         isLoading={isDeleting}
       />
-
 
       <div className="max-w-6xl mx-auto">
         {/* Header & Actions */}
@@ -247,13 +256,6 @@ const Products = () => {
                 You have reached the {productLimit}-product limit on your current {currentPlan} plan. Upgrade your plan to unlock more slots and grow your catalog.
               </p>
             </div>
-          </div>
-        )}
-
-        {message.text && (
-          <div className={`mb-6 p-4 rounded-2xl flex items-start gap-3 ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-emerald-50 border border-emerald-200 text-emerald-800'}`}>
-            {message.type === 'error' ? <XCircle className="w-5 h-5 shrink-0" /> : <CheckCircle2 className="w-5 h-5 shrink-0" />}
-            <p className="text-sm font-bold">{message.text}</p>
           </div>
         )}
 
@@ -348,7 +350,7 @@ const Products = () => {
                     {/* 📱 MOBILE VIEW */}
                     <div className="flex flex-col sm:hidden divide-y divide-gray-100">
                       {filteredProducts.map(product => (
-                        <div key={product.id} className="p-4 flex flex-col gap-4">
+                        <div key={product._id || product.id} className="p-4 flex flex-col gap-4">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-3">
                               <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
@@ -366,10 +368,9 @@ const Products = () => {
                             </div>
                             
                             <div className="flex items-center gap-1 shrink-0">
-                              <Link to={`/dashboard/products/edit/${product.id}`} className="p-2 text-gray-400 hover:text-[#044e3b] bg-gray-50 hover:bg-emerald-50 rounded-lg transition-colors">
+                              <Link to={`/dashboard/products/edit/${product._id || product.id}`} className="p-2 text-gray-400 hover:text-[#044e3b] bg-gray-50 hover:bg-emerald-50 rounded-lg transition-colors">
                                 <Edit className="w-4 h-4" />
                               </Link>
-                              {/* Trigger Modal Instead of window.confirm */}
                               <button onClick={() => setProductToDelete(product)} className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-lg transition-colors">
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -406,7 +407,7 @@ const Products = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {filteredProducts.map(product => (
-                            <tr key={product.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <tr key={product._id || product.id} className="hover:bg-gray-50/50 transition-colors group">
                               <td className="p-4 pl-6">
                                 <div className="flex items-center gap-4">
                                   <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
@@ -434,10 +435,9 @@ const Products = () => {
                               </td>
                               <td className="p-4 pr-6 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <Link to={`/dashboard/products/edit/${product.id}`} className="p-2 text-gray-400 hover:text-[#044e3b] hover:bg-emerald-50 rounded-lg transition-colors">
+                                  <Link to={`/dashboard/products/edit/${product._id || product.id}`} className="p-2 text-gray-400 hover:text-[#044e3b] hover:bg-emerald-50 rounded-lg transition-colors">
                                     <Edit className="w-4 h-4" />
                                   </Link>
-                                  {/* Trigger Modal */}
                                   <button onClick={() => setProductToDelete(product)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -516,8 +516,8 @@ const Products = () => {
                     </div>
                   ) : (
                     categories.map(category => (
-                      <div key={category.id} className="p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        {editingCategory?.id === category.id ? (
+                      <div key={category._id || category.id} className="p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        {(editingCategory?._id || editingCategory?.id) === (category._id || category.id) ? (
                           <div className="flex-1 flex items-center gap-3 mr-4">
                             <input 
                               type="text" 
@@ -538,12 +538,11 @@ const Products = () => {
                           </div>
                         )}
 
-                        {editingCategory?.id !== category.id && (
+                        {(editingCategory?._id || editingCategory?.id) !== (category._id || category.id) && (
                           <div className="flex items-center gap-2 shrink-0">
                             <button onClick={() => setEditingCategory(category)} className="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 rounded-lg transition-colors">
                               <Edit className="w-4 h-4" />
                             </button>
-                            {/* Trigger Category Modal */}
                             <button onClick={() => setCategoryToDelete(category)} className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-lg transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
