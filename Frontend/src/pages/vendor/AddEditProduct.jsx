@@ -24,7 +24,9 @@ const AddEditProduct = () => {
   // --- PLAN & LIMIT LOGIC ---
   const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
   const currentPlan = vendor.plan || "FREE";
-  const maxImages = currentPlan === "GROWTH" ? 5 : currentPlan === "STARTER" ? 3 : 1;
+  
+  // UPDATED: 7 for GROWTH, 5 for STARTER, 2 for FREE
+  const maxImages = currentPlan === "GROWTH" ? 7 : currentPlan === "STARTER" ? 5 : 2;
   
   const canUseDrafts = currentPlan === "STARTER" || currentPlan === "GROWTH";
 
@@ -344,7 +346,7 @@ const AddEditProduct = () => {
                       <div>
                         <h4 className="text-sm font-bold text-yellow-800">Reach your image limit?</h4>
                         <p className="text-xs font-medium text-yellow-700">
-                          {currentPlan === "FREE" ? "Upgrade to Starter to add up to 3 images." : "Upgrade to Growth to add up to 5 images."}
+                          {currentPlan === "FREE" ? "Upgrade to Starter to add up to 5 images." : "Upgrade to Growth to add up to 7 images."}
                         </p>
                       </div>
                     </div>

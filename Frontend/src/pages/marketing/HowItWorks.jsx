@@ -240,7 +240,7 @@ const HowItWorks = () => {
             >
               <div>
                 <div className="text-4xl font-black text-sabi-primary mb-2">1.5%</div>
-                <p className="text-gray-600 font-medium">Low platform fees, capped at ₦1.5k (Starter)</p>
+                <p className="text-gray-600 font-medium">Low platform fees, capped at ₦1500 (Starter)</p>
               </div>
               <div>
                 <div className="text-4xl font-black text-sabi-primary mb-2">₦0</div>

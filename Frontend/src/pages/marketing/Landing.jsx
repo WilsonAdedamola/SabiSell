@@ -108,7 +108,7 @@ const Landing = () => {
         </section>
 
         {/* 2. SOCIAL PROOF BANNER */}
-        <section className="py-8 bg-white">
+        {/* <section className="py-8 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <motion.div 
               initial="hidden" whileInView="show" viewport={{ once: true }} variants={scaleUp}
@@ -136,7 +136,7 @@ const Landing = () => {
               </div>
             </motion.div>
           </div>
-        </section>
+        </section> */}
 
         {/* 3. FEATURES GRID */}
         <section id="features" className="py-20 lg:py-28 bg-white">
@@ -250,7 +250,7 @@ const Landing = () => {
                       <div className="my-4 flex flex-col items-center justify-center">
                         {isYearly && <span className="text-sm text-gray-400 line-through decoration-red-400/50 -mb-5px">₦60,000</span>}
                         <div className="flex items-center gap-1">
-                          <span className="text-3xl font-extrabold text-gray-900">{isYearly ? "₦43,190k" : "₦4,499"}</span>
+                          <span className="text-3xl font-extrabold text-gray-900">{isYearly ? "₦43,190" : "₦4,499"}</span>
                           <span className="text-gray-500 mt-2">{isYearly ? "/year" : "/mo"}</span>
                         </div>
                       </div>

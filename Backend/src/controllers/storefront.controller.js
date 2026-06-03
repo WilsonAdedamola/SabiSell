@@ -44,6 +44,7 @@ exports.getStoreByLink = async (req, res) => {
         email: true,
         businessName: true,
         businessAddress: true,
+        cacNumber: true,
         showBusinessDetails: true,
         isOnline: true,
         deliveryFee: true,

@@ -137,10 +137,10 @@ const NotFound = () => {
             <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure Payments
           </span>
           <span className="flex items-center gap-1.5">
-            <Truck className="w-4 h-4 text-blue-500" /> Fast Delivery
+            <Truck className="w-4 h-4 text-blue-500" /> Advanced Analytics
           </span>
           <span className="flex items-center gap-1.5">
-            <RefreshCcw className="w-4 h-4 text-purple-500" /> Easy Returns
+            <RefreshCcw className="w-4 h-4 text-purple-500" /> Customizable Storefront
           </span>
         </div>
         <div className="inline-flex items-center gap-1 text-xs font-medium text-gray-400">

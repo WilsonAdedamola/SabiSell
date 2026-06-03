@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom"; 
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShoppingBag, Search, Plus, Minus, Copy, Menu, User,
   MapPin, Loader2, ChevronRight, Star, Heart,
   Phone, Mail, MessageCircle, ShieldCheck, Lock, CheckCircle2,
+  SquarePen, X
 } from "lucide-react";
-import IG from '../../assets/social icons/instagram.svg';
-import FB from '../../assets/social icons/facebook.svg';
+import IG from '../../assets/social icons/instagram.png';
+import FB from '../../assets/social icons/facebook.png';
 import TT from '../../assets/social icons/tiktok.svg';
-import X from '../../assets/social icons/x.svg';
+import snap from '../../assets/social icons/snap.png';
+import XIcon from '../../assets/social icons/x.svg';
 import api from '../../utils/api'; 
 import { useCart } from '../../context/CartContext'; 
 import { StoreFrontSkeleton } from "../../components/shared/Skeletons";
@@ -28,7 +31,22 @@ const Storefront = () => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // --- Modal State ---
+  const [activeModal, setActiveModal] = useState(null); // 'refund' | 'delivery' | null
+
   const { cart, addToCart, updateQuantity, cartTotalItems, cartTotalPrice } = useCart();
+
+  // Prevent background scrolling when a modal is open
+  useEffect(() => {
+    if (activeModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [activeModal]);
 
   // --- FETCH STORE & PRODUCTS ---
   useEffect(() => {
@@ -59,17 +77,15 @@ const Storefront = () => {
     fetchStore();
   }, [fallbackStoreLink]); 
 
-  // --- FIXED: CASE INSENSITIVE PLAN CHECK ---
+  // --- VENDOR PLAN CHECK ---
   const userPlan = store?.plan?.toUpperCase() || "FREE";
   const isPremium = userPlan === 'STARTER' || userPlan === 'GROWTH'; 
   const isGrowth = userPlan === 'GROWTH'; 
   
-  // --- FIXED: COMBINED SLIDESHOW ARRAY ---
-  // We merge your main banner Image with the 3 extra slide images
+  // --- COMBINED SLIDESHOW ARRAY ---
   const allSlides = store ? [store.bannerImage, ...(store.slideshowImages || [])].filter(Boolean) : [];
   
   useEffect(() => {
-    // Only run if premium, enabled, AND there is more than 1 image to slide between
     if (!isPremium || !store?.enableSlideshow || allSlides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % allSlides.length);
@@ -92,40 +108,20 @@ const Storefront = () => {
     return matchesSearch && matchesCategory;
   }) || [];
 
-  if (isLoading) {
-    return (
-      <StoreFrontSkeleton />
-    );
-  }
-
-  if (error || !store) {
-    return (
-      <StoreNotFound />
-    );
-  }
+  if (isLoading) return <StoreFrontSkeleton />;
+  if (error || !store) return <StoreNotFound />;
 
   const themeStyle = { backgroundColor: store.themeColor || "#044e3b" };
   const textThemeStyle = { color: store.themeColor || "#044e3b" };
 
+  // Safer boolean check in case the database returns it as a string
+  const showBusinessDetails = store.showBusinessDetails === true || store.showBusinessDetails === "true";
+
   return (
-    <div className="min-h-screen bg-gray-50 font-sans flex flex-col text-gray-900">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col text-gray-900 relative">
       
       {/* 1. HEADER */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm transition-all duration-300">
-        <div className="hidden lg:block bg-[#f8fafc] border-b border-gray-100 text-gray-500 py-2 text-xs font-medium">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-             <div className="flex items-center gap-6">
-                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Verified SabiSell Business</span>
-                <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-emerald-600" /> Secure Payments</span>
-             </div>
-             {store.businessAddress && store.showBusinessDetails && (
-               <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {store.businessAddress}</span>
-               </div>
-             )}
-          </div>
-        </div>
-
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
           <Link to={basePath || "/"} className="flex items-center gap-3 shrink-0">
             {store.logoUrl ? (
@@ -136,7 +132,7 @@ const Storefront = () => {
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <h1 className="font-extrabold text-gray-900 text-base sm:text-lg leading-tight tracking-tight truncate max-w-[160px] sm:max-w-xs">{store.storeName}</h1>
+              <h1 className="font-extrabold text-gray-900 text-base sm:text-lg leading-tight tracking-tight truncate max-w-40 sm:max-w-xs">{store.storeName}</h1>
               <p className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider">Official Store</p>
             </div>
           </Link>
@@ -206,9 +202,8 @@ const Storefront = () => {
       {/* 2. HERO SECTION */}
       {store.hasBanner && (
         <section className="max-w-7xl mx-auto px-4 sm:px-8 mt-6 mb-12 w-full">
-          <div className="w-full h-[60vh] sm:h-[70vh] rounded-[2rem] overflow-hidden relative bg-[#EFEFE9] flex items-center shadow-sm">
+          <div className="w-full h-[60vh] sm:h-[70vh] rounded-4xl overflow-hidden relative bg-[#EFEFE9] flex items-center shadow-sm">
             
-            {/* UPDATED SLIDESHOW: Loops through allSlides (Banner + Extra Slides) */}
             {isPremium && store.enableSlideshow && allSlides.length > 0 ? (
               <>
                 {allSlides.map((imgUrl, index) => (
@@ -295,7 +290,6 @@ const Storefront = () => {
         {/* 4. ALL PRODUCTS GRID */}
         <section id="products" className="mb-16 mt-8">
            <div className="flex justify-between items-end mb-6">
-             {/* --- NEW: Dynamic Category Title --- */}
              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-serif">
                {activeCategory === "All" ? "All Products" : activeCategory}
              </h3>
@@ -312,13 +306,12 @@ const Storefront = () => {
                 const cartItem = cart.find(i => i.id === product.id);
                 const qty = cartItem ? cartItem.cartQuantity : 0;
                 
-                // --- NEW: Added Low Stock Logic ---
                 const isOutOfStock = product.stockQuantity === 0;
                 const isLowStock = !isOutOfStock && product.stockQuantity > 0 && product.stockQuantity < 5; 
 
                 return (
                   <div key={product.id} className="flex flex-col group">
-                    <div className="relative aspect-[3/4] bg-[#F5F2ED] rounded-2xl overflow-hidden mb-4">
+                    <div className="relative aspect-3/4 bg-[#F5F2ED] rounded-2xl overflow-hidden mb-4">
                       <Link to={`${basePath}/product/${product.id}`} className="block w-full h-full">
                         {product.imageUrls?.[0] ? (
                           <img 
@@ -338,12 +331,10 @@ const Storefront = () => {
                         )}
                       </Link>
                       
-                      {/* Moved Heart to top-right to prevent overlap */}
                       <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-500">
                         <Heart className="w-4 h-4" />
                       </button>
 
-                      {/* --- NEW: Low Stock Text (Bottom Right) --- */}
                       {isLowStock && (
                         <div className="absolute bottom-3 right-3 bg-white/95 text-orange-600 border border-orange-100 text-[10px] font-extrabold px-2 py-1 uppercase tracking-wider rounded shadow-sm pointer-events-none">
                           Low Stock
@@ -367,15 +358,7 @@ const Storefront = () => {
                     </div>
 
                     <div className="flex items-center justify-between mt-auto">
-                       {/* COMMENTED OUT STAR RATING FOR NOW 
-                         <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium">
-                           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.8
-                         </div> 
-                       */}
-                       
-                       {/* Empty div to keep the Add To Cart buttons pushed to the right */}
                        <div /> 
-                       
                        {!isOutOfStock && qty === 0 && (
                           <button 
                             onClick={() => addToCart(product)}
@@ -506,7 +489,7 @@ const Storefront = () => {
                  </div>
 
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    {store.businessAddress && store.businessAddress !== "null" && store.showBusinessDetails && (
+                    {store.businessAddress && store.businessAddress !== "null" && showBusinessDetails && (
                       <li className="flex items-start gap-3">
                          <MapPin className="w-5 h-5 shrink-0" style={textThemeStyle} />
                          <span>{store.businessAddress}</span>
@@ -518,23 +501,38 @@ const Storefront = () => {
                          <span>{store.email}</span>
                       </li>
                     )}
+                    {/* Fixed CAC Number Logic */}
+                    {store.cacNumber && store.cacNumber !== "null" && showBusinessDetails && (
+                      <li className="flex items-center gap-3">
+                         <SquarePen className="w-5 h-5 shrink-0" style={textThemeStyle} />
+                         <span>CAC: {store.cacNumber}</span>
+                      </li>
+                    )}
                  </ul>
               </div>
 
               <div className="md:col-span-3 lg:col-span-4">
                  <h4 className="font-bold text-gray-900 mb-6">Quick Links</h4>
                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    <li><Link to={basePath || "/"} className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Home</Link></li>
-                    <li><Link to={`${basePath}/cart`} className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
-                    <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Return Policy</a></li>
-                    <li><a href="#" className="transition-colors flex items-center gap-2 hover:opacity-80" style={{ hover: textThemeStyle }}><ChevronRight className="w-4 h-4"/> Delivery Information</a></li>
+                    <li><Link to={basePath || "/"} className="transition-colors flex items-center gap-2 hover:opacity-80"><ChevronRight className="w-4 h-4"/> Home</Link></li>
+                    <li><Link to={`${basePath}/cart`} className="transition-colors flex items-center gap-2 hover:opacity-80"><ChevronRight className="w-4 h-4"/> Shopping Cart</Link></li>
+                    <li>
+                      <button onClick={() => setActiveModal('refund')} className="transition-colors flex items-center gap-2 hover:opacity-80">
+                        <ChevronRight className="w-4 h-4"/> Return Policy
+                      </button>
+                    </li>
+                    <li>
+                      <button onClick={() => setActiveModal('delivery')} className="transition-colors flex items-center gap-2 hover:opacity-80">
+                        <ChevronRight className="w-4 h-4"/> Delivery Information
+                      </button>
+                    </li>
                  </ul>
                  
                  <div className="flex gap-3 mt-6">
                     {store.facebook && store.facebook !== "null" && <a href={`https://www.facebook.com/${store.facebook}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100"><img src={FB} alt="facebook" className="w-4 h-4" /></a>}
-                    {store.twitter && store.twitter !== "null" && <a href={`https://twitter.com/${store.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={X} alt="X" className="w-4 h-4" /></a>}
+                    {store.twitter && store.twitter !== "null" && <a href={`https://twitter.com/${store.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={XIcon} alt="X" className="w-4 h-4" /></a>}
                     {store.tiktok && store.tiktok !== "null" && <a href={`https://tiktok.com/${store.tiktok}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-gray-200"><img src={TT} alt="TikTok" className="w-4 h-4" /></a>}
-                    {store.snapchat && store.snapchat !== "null" && <a href={`https://snapchat.com/${store.snapchat}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center hover:bg-yellow-200 font-bold text-xs">SC</a>}
+                    {store.snapchat && store.snapchat !== "null" && <a href={`https://snapchat.com/${store.snapchat}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center hover:bg-yellow-200"><img src={snap} alt="Snapchat" className="w-8 h-8" /></a>}
                  </div>
               </div>
            </div>
@@ -544,19 +542,78 @@ const Storefront = () => {
                  &copy; {new Date().getFullYear()} {store.storeName}. All rights reserved.
               </p>
               
-              <div className="flex flex-col items-center sm:items-end">
-                 <div className="flex items-center gap-1.5 text-sm mb-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span className="text-gray-500 font-medium">Powered by</span>
-                    <a href="https://sabisell.com" target="_blank" rel="noreferrer" className="font-extrabold text-gray-900 tracking-tight hover:text-emerald-600 transition-colors">SabiSell</a>
-                 </div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Trusted by 10,000+ Vendors
-                 </p>
-              </div>
+              {/* Dynamic SabiSell Logo Rendering based on Plan */}
+              {userPlan !== 'GROWTH' && (
+                <div className={`flex flex-col items-center sm:items-end ${userPlan === 'STARTER' ? 'opacity-30 grayscale scale-75 hover:grayscale-0 hover:opacity-100 transition-all duration-300' : ''}`}>
+                   <div className="flex items-center gap-1.5 text-sm mb-1">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span className="text-gray-500 font-medium">Powered by</span>
+                      <a href="https://sabisell.com" target="_blank" rel="noreferrer" className="font-extrabold text-gray-900 tracking-tight hover:text-emerald-600 transition-colors">SabiSell</a>
+                   </div>
+                </div>
+              )}
            </div>
         </div>
       </footer>
+
+    
+      {/* BLURRED POPUP MODALS FOR POLICIES                        */}
+    
+      <AnimatePresence>
+        {activeModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative max-h-[85vh] flex flex-col"
+            >
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <h3 className="text-2xl font-extrabold text-gray-900 mb-6 font-serif">
+                {activeModal === 'refund' ? 'Return & Refund Policy' : 'Delivery Information'}
+              </h3>
+
+              <div className="overflow-y-auto pr-2 custom-scrollbar text-gray-600 text-sm leading-relaxed whitespace-pre-line space-y-4">
+                {activeModal === 'refund' ? (
+                  store.refundPolicy && store.refundPolicy !== "null" 
+                    ? store.refundPolicy 
+                    : "This store has not provided a specific return or refund policy yet. Please contact the store owner directly for any disputes."
+                ) : (
+                  <>
+                    <p className="font-bold text-gray-900 text-base">Current Delivery Process</p>
+                    <p>
+                      At checkout, please select <strong className="text-gray-800">"Pay Delivery Later"</strong>. Once your order is placed, we will contact you using the details you provided to agree on a delivery method and fee.
+                    </p>
+                    <p className="font-bold text-gray-900 text-base mt-6">Coming Soon</p>
+                    <p>
+                      We are actively integrating with top logistics partners. Very soon, your delivery fees will be automatically calculated at checkout based on your exact location.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-gray-100">
+                <button 
+                  onClick={() => setActiveModal(null)}
+                  className="w-full py-3 rounded-xl text-white font-bold transition-all shadow-sm"
+                  style={themeStyle}
+                >
+                  Understood
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
