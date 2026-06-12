@@ -19,6 +19,13 @@ import Footer from "../../components/shared/Footer";
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
 
+  // Yearly pricing with 20% discount applied
+  const STARTER_MONTHLY = 4499;
+  const STARTER_YEARLY = 43190; // (4499 * 12) * 0.8
+  
+  const GROWTH_MONTHLY = 9499;
+  const GROWTH_YEARLY = 91190;  // (9499 * 12) * 0.8
+
   return (
     <div className="min-h-screen bg-sabi-surface flex flex-col font-sans">
       <Header />
@@ -81,7 +88,7 @@ const Pricing = () => {
                   Free
                 </h4>
                 <p className="text-gray-500 text-sm mt-1 font-medium">
-                  Perfect to get started
+                  Entry Level
                 </p>
                 <div className="mt-6 mb-2 flex items-center justify-center gap-1">
                   <span className="text-5xl font-extrabold text-gray-900">
@@ -89,14 +96,16 @@ const Pricing = () => {
                   </span>
                   <span className="text-gray-500 mt-3 font-medium">/month</span>
                 </div>
+                <div className="text-sm font-bold text-gray-500 mt-2 bg-gray-50 rounded-lg py-1.5 border border-gray-100">3.0% Transaction Fee</div>
               </div>
-              <ul className="space-y-4 mb-10 flex-grow">
+              <ul className="space-y-4 mb-10 grow">
                 {[
-                  "Up to 10 products",
+                  "Up to 10 Products",
+                  "Up to 2 Images per product",
                   { text: "Free SabiSell subdomain", sub: "yourstore.sabisell.com" },
-                  "Accept orders & payments",
+                  "Unlimited Manual Orders",
                   "WhatsApp chat integration",
-                  "SabiSell branding on store",
+                  "Prominent SabiSell branding",
                 ].map((ft, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-gray-700 font-medium">
                     <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -113,13 +122,13 @@ const Pricing = () => {
                   </li>
                 ))}
               </ul>
-              <Link to="/auth/register" className="w-full py-4 rounded-xl border border-gray-300 text-gray-800 font-bold hover:bg-gray-50 transition-colors text-center text-base">
+              <Link to="/register" className="w-full py-4 rounded-xl border border-gray-300 text-gray-800 font-bold hover:bg-gray-50 transition-colors text-center text-base">
                 Start Selling Free
               </Link>
             </div>
 
-            {/* Starter Plan (Most Popular) */}
-            <div className="bg-white rounded-[2rem] p-8 md:p-10 border-2 border-sabi-primary shadow-2xl flex flex-col relative transform md:-translate-y-4">
+            {/* Starter Plan */}
+            <div className="bg-white rounded-4xl p-8 md:p-10 border-2 border-sabi-primary shadow-2xl flex flex-col relative transform md:-translate-y-4">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-sabi-primary text-white px-5 py-1.5 rounded-full text-xs font-bold tracking-wider flex items-center gap-1.5 shadow-md">
                 <Star className="w-3.5 h-3.5 fill-white" /> MOST POPULAR
               </div>
@@ -132,28 +141,31 @@ const Pricing = () => {
                 </p>
                 <div className="mt-6 mb-2 flex flex-col items-center justify-center">
                   {isYearly && (
-                    <span className="text-lg text-gray-400 line-through decoration-red-400/50 mb-[-5px] font-bold">
-                      ₦60,000
+                    <span className="text-lg text-gray-400 line-through decoration-red-400/50 -mb-1.25 font-bold">
+                      ₦{(STARTER_MONTHLY * 12).toLocaleString()}
                     </span>
                   )}
                   <div className="flex items-center gap-1">
                     <span className="text-5xl font-extrabold text-gray-900">
-                      {isYearly ? "₦48,000" : "₦5,000"}
+                      {isYearly ? `₦${STARTER_YEARLY.toLocaleString()}` : `₦${STARTER_MONTHLY.toLocaleString()}`}
                     </span>
                     <span className="text-gray-500 mt-3 font-medium">
                       {isYearly ? "/year" : "/month"}
                     </span>
                   </div>
+                  <div className="text-sm font-bold text-sabi-primary mt-2 bg-emerald-50 rounded-lg py-1.5 px-4 border border-emerald-100">Only 1.5% Transaction Fee</div>
                 </div>
               </div>
-              <ul className="space-y-4 mb-10 flex-grow">
+              <ul className="space-y-4 mb-10 grow">
                 {[
-                  "Up to 100 products",
-                  { text: "Custom domain (yourstore.com)", icon: <Globe className="w-4 h-4 text-gray-400"/> },
-                  "Remove SabiSell branding",
+                  "Up to 100 Products",
+                  "Up to 5 Images per product",
+                  { text: "Custom domain connection", icon: <Globe className="w-4 h-4 text-gray-400"/> },
+                  "Automated Status Tracking",
                   "Basic analytics & insights",
                   "In-app chat + WhatsApp",
-                  "Multiple payment methods",
+                  "Basic Promos & Discounts",
+                  "Subtle SabiSell branding"
                 ].map((ft, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-gray-900 font-semibold">
                     <div className="w-5 h-5 rounded-full bg-sabi-primary flex items-center justify-center shrink-0 mt-0.5">
@@ -170,8 +182,8 @@ const Pricing = () => {
                   </li>
                 ))}
               </ul>
-              <Link to="/auth/register" className="w-full py-4 rounded-xl bg-sabi-primary text-white font-bold hover:bg-sabi-primaryDark transition-colors text-center text-base shadow-md shadow-emerald-600/20">
-                Start 7-Day Free Trial
+              <Link to="/register" className="w-full py-4 rounded-xl bg-sabi-primary text-white font-bold hover:bg-sabi-primaryDark transition-colors text-center text-base shadow-md shadow-emerald-600/20">
+                Start 14-Day Free Trial
               </Link>
             </div>
 
@@ -182,32 +194,34 @@ const Pricing = () => {
                   Growth
                 </h4>
                 <p className="text-gray-500 text-sm mt-1 font-medium">
-                  Powerful tools for scaling
+                  Power Users
                 </p>
                 <div className="mt-6 mb-2 flex flex-col items-center justify-center">
                   {isYearly && (
                     <span className="text-lg text-gray-400 line-through decoration-red-400/50 -mb-1.25 font-bold">
-                      ₦144,000
+                      ₦{(GROWTH_MONTHLY * 12).toLocaleString()}
                     </span>
                   )}
                   <div className="flex items-center gap-1">
                     <span className="text-5xl font-extrabold text-gray-900">
-                      {isYearly ? "₦115,200" : "₦12,000"}
+                      {isYearly ? `₦${GROWTH_YEARLY.toLocaleString()}` : `₦${GROWTH_MONTHLY.toLocaleString()}`}
                     </span>
                     <span className="text-gray-500 mt-3 font-medium">
                       {isYearly ? "/year" : "/month"}
                     </span>
                   </div>
+                  <div className="text-sm font-bold text-purple-700 mt-2 bg-purple-50 rounded-lg py-1.5 px-4 border border-purple-100">0% Transaction Fee</div>
                 </div>
               </div>
               <ul className="space-y-4 mb-10 grow">
                 {[
-                  "Unlimited products",
+                  "Unlimited Products",
+                  "Up to 7 Images per product",
                   { text: "Staff accounts (up to 5 users)", icon: <Users className="w-4 h-4 text-purple-400"/> },
                   "Advanced analytics dashboard",
-                  "Automated emails & receipts",
-                  "Discount codes & promotions",
-                  "Priority support",
+                  "Auto-Email Confirmations",
+                  "Advanced Promos & Flash Sales",
+                  "Remove SabiSell branding",
                 ].map((ft, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-gray-700 font-medium">
                     <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -224,7 +238,7 @@ const Pricing = () => {
                   </li>
                 ))}
               </ul>
-              <Link to="/auth/register" className="w-full py-4 rounded-xl bg-[#6D28D9] text-white font-bold hover:bg-[#5B21B6] transition-colors text-center text-base shadow-md shadow-purple-600/20">
+              <Link to="/register" className="w-full py-4 rounded-xl bg-[#6D28D9] text-white font-bold hover:bg-[#5B21B6] transition-colors text-center text-base shadow-md shadow-purple-600/20">
                 Upgrade to Growth
               </Link>
             </div>
@@ -248,7 +262,7 @@ const Pricing = () => {
                  {/* Left side text */}
                  <div className="lg:col-span-4 lg:sticky lg:top-28">
                     <h2 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Compare Plans</h2>
-                    <p className="text-gray-600 text-lg">See what's included in each plan.</p>
+                    <p className="text-gray-600 text-lg">See exactly what's included in each tier to scale your business.</p>
                  </div>
 
                  {/* Right side table */}
@@ -256,28 +270,37 @@ const Pricing = () => {
                     <table className="w-full min-w-150 text-left border-collapse">
                        <thead>
                           <tr className="border-b border-gray-100 bg-gray-50/50">
-                             <th className="py-5 px-6 font-bold text-gray-900 text-sm">Features</th>
+                             <th className="py-5 px-6 font-bold text-gray-900 text-sm">Feature Category</th>
                              <th className="py-5 px-6 font-bold text-gray-600 text-sm text-center">Free</th>
                              <th className="py-5 px-6 font-bold text-sabi-primary text-sm text-center bg-emerald-50/30">Starter</th>
-                             <th className="py-5 px-6 font-bold text-gray-600 text-sm text-center">Growth</th>
+                             <th className="py-5 px-6 font-bold text-[#6D28D9] text-sm text-center">Growth</th>
                           </tr>
                        </thead>
                        <tbody className="divide-y divide-gray-100">
                           {[
-                             { name: "Products", f: "Up to 10", s: "Up to 100", g: "Unlimited" },
-                             { name: "Custom Domain", f: false, s: true, g: true },
-                             { name: "Remove SabiSell Branding", f: false, s: true, g: true },
-                             { name: "Analytics & Insights", f: "—", s: "Basic", g: "Advanced" },
-                             { name: "Staff Accounts", f: "—", s: "1 Admin", g: "Up to 5 Users" },
-                             { name: "Automated Emails", f: false, s: false, g: true },
-                             { name: "Priority Support", f: false, s: false, g: true },
+                             { name: "Platform Transaction Fee", f: "3.0%", s: "1.5%", g: "0%" },
+                             { name: "Product Limits", f: "Up to 10", s: "Up to 100", g: "Unlimited" },
+                             { name: "Images per Product", f: "Up to 2", s: "Up to 5", g: "Up to 7" },
+                             { name: "Custom Categories", f: "0", s: "Up to 5", g: "Up to 15" },
+                             { name: "Product Drafts", f: false, s: true, g: true },
+                             { name: "Store Domain", f: "sabisell.com/store", s: "Custom Domain", g: "Custom Domain" },
+                             { name: "Payments Integration", f: "Paystack", s: "Paystack", g: "Paystack" },
+                            //  { name: "Order Management", f: "Manual", s: "Automated Status", g: "Auto-Email Confirm" },
+                             { name: "Store Customization", f: "Standard Layout", s: "Custom Banner", g: "Banner + Themes" },
+                             { name: "Customer Chat", f: "WhatsApp Routing", s: "WhatsApp & In-App", g: "WhatsApp & In-App" },
+                             { name: "Marketing & Promos", f: false, s: "Basic", g: "Advanced/Flash" },
+                             { name: "Analytics Dashboard", f: false, s: "Basic", g: "Advanced" },
+                             { name: "Inventory Alerts", f: "Stock Counts", s: "+ Low Stock Alerts", g: "+ Low Stock Alerts" },
+                            //  { name: "Staff Accounts", f: "1 (Owner Only)", s: "Up to 2 Users", g: "Up to 5 Users" },
+                             { name: "Offline Sales Tracking", f: false, s: true, g: true },
+                             { name: "SabiSell Branding", f: "Prominent Badge", s: "Subtle Badge", g: "Completely Removed" },
                           ].map((row, idx) => (
                              <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="py-5 px-6 text-sm font-semibold text-gray-800">{row.name}</td>
                                 
                                 {/* Free Column */}
                                 <td className="py-5 px-6 text-center text-sm font-medium text-gray-500">
-                                   {row.f === true ? <Check className="w-5 h-5 text-sabi-primary mx-auto" /> : row.f === false ? "—" : row.f}
+                                   {row.f === true ? <Check className="w-5 h-5 text-gray-400 mx-auto" /> : row.f === false ? "—" : row.f}
                                 </td>
                                 
                                 {/* Starter Column */}
@@ -287,7 +310,7 @@ const Pricing = () => {
 
                                 {/* Growth Column */}
                                 <td className="py-5 px-6 text-center text-sm font-medium text-gray-700">
-                                   {row.g === true ? <Check className="w-5 h-5 text-sabi-primary mx-auto" /> : row.g === false ? "—" : row.g}
+                                   {row.g === true ? <Check className="w-5 h-5 text-[#6D28D9] mx-auto" /> : row.g === false ? "—" : row.g}
                                 </td>
                              </tr>
                           ))}
@@ -377,7 +400,7 @@ const Pricing = () => {
 
             <div className="z-10 w-full md:w-auto">
               <Link
-                to="/auth/register"
+                to="/register"
                 className="w-full md:w-auto bg-white hover:bg-gray-50 text-sabi-primary px-8 py-4 rounded-xl font-bold transition-colors whitespace-nowrap flex items-center justify-center gap-2 shadow-lg"
               >
                 Start Your Free Store Now <span>→</span>
