@@ -15,6 +15,7 @@ import {
   Zap
 } from "lucide-react";
 import heroImg from "../../assets/HeroImg.svg";
+// import heroImg from "../../assets/HeroImg.jpg";
 import Header from "../../components/shared/Header";
 import Footer from "../../components/shared/Footer";
 

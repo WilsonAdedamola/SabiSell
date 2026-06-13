@@ -21,11 +21,10 @@ const AddEditProduct = () => {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // --- PLAN & LIMIT LOGIC ---
+  // PLAN & LIMIT LOGIC
   const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
   const currentPlan = vendor.plan || "FREE";
   
-  // UPDATED: 7 for GROWTH, 5 for STARTER, 2 for FREE
   const maxImages = currentPlan === "GROWTH" ? 7 : currentPlan === "STARTER" ? 5 : 2;
   
   const canUseDrafts = currentPlan === "STARTER" || currentPlan === "GROWTH";
@@ -48,7 +47,7 @@ const AddEditProduct = () => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]); 
 
-  // --- FETCH DATA ---
+  // FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -94,7 +93,7 @@ const AddEditProduct = () => {
     fetchData();
   }, [id, isEditMode]);
 
-  // --- HANDLERS ---
+  // HANDLERS
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError("");
@@ -148,7 +147,7 @@ const AddEditProduct = () => {
     setStep(prev => Math.min(prev + 1, 3));
   };
 
-  // --- API SUBMISSION ---
+  // API SUBMISSION
   const handlePublish = async (forceDraft = false) => {
     setIsLoading(true);
     setError("");
@@ -212,7 +211,7 @@ const AddEditProduct = () => {
   return (
     <div className="flex-1 overflow-y-auto h-full p-4 sm:p-6 lg:p-8 pb-32 lg:pb-20 w-full bg-sabi-surface relative">
       
-      {/* --- RENDER YOUR CUSTOM TOAST --- */}
+      {/* RENDER CUSTOM TOAST */}
       {toast && (
         <Toast 
           message={toast.message} 
@@ -234,7 +233,7 @@ const AddEditProduct = () => {
             </h1>
           </div>
           
-          {/* --- LOCKED DRAFTS BUTTON --- */}
+          {/* LOCKED DRAFTS BUTTON */}
           {!canUseDrafts ? (
             <Link to="/dashboard/billing" className="text-xs font-bold text-purple-700 hover:bg-purple-100 bg-purple-50 transition-colors flex items-center gap-1.5 border border-purple-200 px-4 py-2.5 rounded-xl w-fit">
               <Lock className="w-3.5 h-3.5" /> Save to Draft (Upgrade)
@@ -305,11 +304,12 @@ const AddEditProduct = () => {
                 
                 <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
                   {imagePreviews.map((src, index) => (
-                    <div key={index} className="relative w-24 h-24 shrink-0 rounded-2xl border border-gray-200 flex items-center justify-center overflow-hidden group bg-gray-50">
+                    <div key={index} className="relative w-24 h-24 shrink-0 rounded-2xl border border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 shadow-sm">
                       <img src={src} alt={`Upload ${index + 1}`} className="w-full h-full object-cover" />
                       <button 
                         onClick={() => removeImage(index)}
-                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-gray-900/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                        type="button"
+                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/90 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-md backdrop-blur-sm"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -418,12 +418,12 @@ const AddEditProduct = () => {
                     <AlignLeft className="w-5 h-5 text-sabi-primary" />
                   </div>
                   <textarea 
-                    rows="4" 
+                    rows="6" 
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder="Describe your product's features, material, and benefits..."
-                    className="w-full pl-12 pr-4 py-4 bg-emerald-50/30 border border-emerald-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary transition-all font-medium text-gray-700 resize-none"
+                    placeholder={"Describe your product in detail...\n\nHelpful details to include:\n• Size & Dimensions (e.g., S, M, L or 10x15cm)\n• Available Colors (e.g., Red, Blue, Black)\n• Materials used (e.g., 100% Cotton, Leather)\n• Key Features & Benefits\n• Care instructions or What's in the box"}
+                    className="w-full pl-12 pr-4 py-4 bg-emerald-50/30 border border-emerald-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary transition-all font-medium text-gray-700 resize-none placeholder-gray-400"
                   ></textarea>
                 </div>
               </div>
@@ -493,7 +493,7 @@ const AddEditProduct = () => {
                 </div>
               </div>
 
-              {/* --- LOCKED PRODUCT STATUS TOGGLE --- */}
+              {/* LOCKED PRODUCT STATUS TOGGLE */}
               <div className="mb-8">
                 <div 
                   className={`bg-gray-50 border ${!canUseDrafts ? 'border-gray-200 opacity-60 cursor-not-allowed' : 'border-gray-200 hover:border-emerald-200 cursor-pointer'} rounded-xl p-4 flex items-center justify-between transition-colors`} 
@@ -532,64 +532,72 @@ const AddEditProduct = () => {
 
           {/* STEP 3: REVIEW */}
           {step === 3 && (
-            <div className="animate-in slide-in-from-right-4 duration-300 text-center py-2">
+            <div className="animate-in slide-in-from-right-4 duration-300 py-2">
               
-              <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 relative rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gray-50 flex items-center justify-center">
-                 {imagePreviews.length > 0 ? (
-                   <img src={imagePreviews[0]} alt="Product preview" className="w-full h-full object-cover" />
-                 ) : (
-                   <ImageIcon className="w-8 h-8 text-gray-300" />
-                 )}
-              </div>
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                {/* LEFT SIDE: Image */}
+                <div className="w-full md:w-1/2 aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50 flex items-center justify-center">
+                   {imagePreviews.length > 0 ? (
+                     <img src={imagePreviews[0]} alt="Product preview" className="w-full h-full object-cover" />
+                   ) : (
+                     <ImageIcon className="w-16 h-16 text-gray-300" />
+                   )}
+                </div>
 
-              <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-2">
-                {isEditMode ? "Ready to Update" : "Ready to Publish"}
-              </h3>
-              <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
-                Review your product details before {isEditMode ? "updating" : "publishing"}.
-              </p>
+                {/* RIGHT SIDE: Details & Buttons */}
+                <div className="w-full md:w-1/2 flex flex-col justify-center">
+                  <div className="text-center md:text-left mb-6">
+                    <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">
+                      {isEditMode ? "Ready to Update" : "Ready to Publish"}
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      Review your product details before {isEditMode ? "updating" : "publishing"}.
+                    </p>
+                  </div>
 
-              {/* PRODUCT SUMMARY CARD */}
-              <div className="bg-gray-50 rounded-2xl p-4 sm:p-5 text-left space-y-3 mb-8 w-full max-w-sm mx-auto border border-gray-200 shadow-sm">
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Name</span> 
-                  <span className="text-sm font-bold text-gray-900 truncate pl-4">{formData.name}</span>
+                  {/* PRODUCT SUMMARY CARD */}
+                  <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3 mb-8 w-full border border-gray-200 shadow-sm">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Name</span> 
+                      <span className="text-sm font-bold text-gray-900 truncate pl-4">{formData.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Category</span> 
+                      <span className="text-sm font-bold text-gray-900">{formData.category || "None"}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Price</span> 
+                      <span className="text-sm font-extrabold text-sabi-primary">₦{Number(formData.price).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Stock</span> 
+                      <span className="text-sm font-bold text-gray-900">{formData.stockQuantity} Units</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Status</span> 
+                      <span className={`text-[11px] px-2 py-0.5 rounded uppercase font-extrabold ${isToggled ? "bg-emerald-100 text-emerald-800" : "bg-purple-100 text-purple-800"}`}>
+                        {isToggled ? "Active" : "Draft"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button onClick={() => setStep(2)} disabled={isLoading || toast !== null} className="w-1/3 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold transition-all hover:bg-gray-50 disabled:opacity-50">
+                      Back
+                    </button>
+                    <button 
+                      onClick={() => handlePublish(false)} 
+                      disabled={isLoading || toast !== null} 
+                      className="w-2/3 py-4 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 text-base disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isLoading && !toast ? (
+                        <>Processing <Loader2 className="w-5 h-5 animate-spin" /></>
+                      ) : (
+                        isEditMode ? "Update Product" : "Publish Product"
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Category</span> 
-                  <span className="text-sm font-bold text-gray-900">{formData.category || "None"}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Price</span> 
-                  <span className="text-sm font-extrabold text-sabi-primary">₦{Number(formData.price).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Stock</span> 
-                  <span className="text-sm font-bold text-gray-900">{formData.stockQuantity} Units</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">Status</span> 
-                  <span className={`text-[11px] px-2 py-0.5 rounded uppercase font-extrabold ${isToggled ? "bg-emerald-100 text-emerald-800" : "bg-purple-100 text-purple-800"}`}>
-                    {isToggled ? "Active" : "Draft"}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <button onClick={() => setStep(2)} disabled={isLoading || toast !== null} className="w-1/3 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold transition-all hover:bg-gray-50 disabled:opacity-50">
-                  Back
-                </button>
-                <button 
-                  onClick={() => handlePublish(false)} 
-                  disabled={isLoading || toast !== null} 
-                  className="w-2/3 py-4 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 text-base disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isLoading && !toast ? (
-                    <>Processing <Loader2 className="w-5 h-5 animate-spin" /></>
-                  ) : (
-                    isEditMode ? "Update Product" : "Publish Product"
-                  )}
-                </button>
               </div>
             </div>
           )}

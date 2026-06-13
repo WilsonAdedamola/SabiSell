@@ -34,10 +34,12 @@ import OrderDetails from "./pages/vendor/OrderDetails";
 import Inbox from "./pages/vendor/Inbox";
 import ChatScreen from "./pages/vendor/ChatScreen";
 import Settings from "./pages/vendor/Settings";
+import Analytics from "./pages/vendor/Analytics";
 import Billing from "./pages/vendor/Billing";
 import Discounts from "./pages/vendor/Discount";
 import StoreLink from "./pages/vendor/StoreLink";
 import Payments from "./pages/vendor/Payments";
+import Sales from "./pages/vendor/Sales";
 
 // 6. CUSTOMER STOREFRONT PAGES
 import Storefront from "./pages/store/StoreFront";
@@ -82,12 +84,13 @@ const mainRouter = createBrowserRouter([
       { path: "products/edit/:id", element: <AddEditProduct /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetails /> },
+      { path: "analytics", element: <Analytics /> },
       { path: "messages", element: <Inbox /> },
       { path: "messages/:id", element: <ChatScreen /> },
       { path: "settings", element: <Settings /> },
       { path: "billing", element: <Billing /> },
       { path: "discounts", element: <Discounts /> },
-      // { path: "records", element: <Records /> },
+      { path: "sales", element: <Sales /> },
       { path: "store-link", element: <StoreLink /> },
       { path: "payments", element: <Payments /> },
     ],

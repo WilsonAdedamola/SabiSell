@@ -7,6 +7,8 @@ const api = axios.create({
 
 // https://chip-wikipedia-devotion.ngrok-free.dev
 
+// https://sabisell.onrender.com/api/webhooks/paystack
+
 // 1. REQUEST INTERCEPTOR: Attach the token
 api.interceptors.request.use(
   (config) => {

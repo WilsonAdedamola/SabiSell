@@ -168,7 +168,7 @@ const VendorLayout = () => {
       { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
     ]},
     { section: "SALES & MARKETING", items: [
-      { name: "Sales Record", icon: Brackets, path: "/dashboard/record" },
+      { name: "Sales", icon: Brackets, path: "/dashboard/sales" },
       { name: "Discounts & Coupons", icon: Tag, path: "/dashboard/discounts" },
       { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/store-link" },
     ]},
