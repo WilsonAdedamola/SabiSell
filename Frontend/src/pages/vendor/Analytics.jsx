@@ -2,8 +2,12 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, Users, ShoppingCart, Package, Lock, Star, 
-  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, CheckCircle2
+  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter
 } from "lucide-react";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
+  ResponsiveContainer, PieChart, Pie, Cell 
+} from 'recharts';
 import api from '../../utils/api';
 import { DashboardSkeleton } from "../../components/shared/Skeletons";
 
@@ -11,7 +15,7 @@ const Analytics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState("Last 7 Days");
   
-  // Simulated Analytics Data (Ready to be replaced with real API call)
+  // Simulated Analytics Data
   const [data, setData] = useState(null);
 
   // Vendor Plan Logic
@@ -23,7 +27,6 @@ const Analytics = () => {
   const isGrowth = currentPlan === "GROWTH";
 
   useEffect(() => {
-    // If they are on Free, don't bother fetching data
     if (isFree) {
       setIsLoading(false);
       return;
@@ -102,8 +105,41 @@ const Analytics = () => {
     );
   }
 
-  // Find max sales for the chart scaling
-  const maxSales = Math.max(...(data?.salesTrend.map(d => d.sales) || [0]));
+  // --- RECHARTS CUSTOM TOOLTIPS ---
+  const CustomBarTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900 text-white p-3 rounded-xl shadow-xl border border-gray-700">
+          <p className="text-gray-400 text-xs font-bold mb-1">{label}</p>
+          <p className="text-lg font-black tracking-tight">
+            ₦{payload[0].value.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomPieTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.color }}></div>
+          <div>
+            <p className="text-gray-500 text-xs font-bold">{payload[0].name}</p>
+            <p className="text-gray-900 text-sm font-black">₦{payload[0].value.toLocaleString()}</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Data for the Donut Chart
+  const pieData = data ? [
+    { name: 'Online Sales', value: data.overview.onlineRevenue, color: '#2563EB' }, // Blue
+    { name: 'Offline Sales', value: data.overview.offlineRevenue, color: '#EA580C' } // Orange
+  ] : [];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
@@ -153,7 +189,7 @@ const Analytics = () => {
 
         {/* OVERVIEW METRICS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Revenue (Available to both) */}
+          {/* Revenue */}
           <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -168,7 +204,7 @@ const Analytics = () => {
             <h3 className="text-2xl font-black text-gray-900">₦{data.overview.totalRevenue.toLocaleString()}</h3>
           </div>
 
-          {/* Orders (Available to both) */}
+          {/* Orders */}
           <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
@@ -228,84 +264,105 @@ const Analytics = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           
-          {/* SALES TREND CHART (CSS Based) */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2 flex flex-col">
-            <h3 className="text-lg font-extrabold text-gray-900 mb-6">Revenue Trend</h3>
-            
-            <div className="flex-1 flex items-end gap-2 sm:gap-4 h-64 mt-auto">
-              {data.salesTrend.map((day, idx) => {
-                const heightPercentage = (day.sales / maxSales) * 100;
-                return (
-                  <div key={idx} className="flex flex-col items-center flex-1 group">
-                    {/* Tooltip on hover */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold py-1 px-2 rounded absolute -mt-8 whitespace-nowrap pointer-events-none z-10">
-                      ₦{day.sales.toLocaleString()}
-                    </div>
-                    {/* Bar */}
-                    <div className="w-full bg-emerald-50 rounded-t-lg relative overflow-hidden h-full flex items-end">
-                      <div 
-                        className={`w-full rounded-t-lg transition-all duration-700 ease-out ${isGrowth ? 'bg-[#044e3b]' : 'bg-emerald-300'}`}
-                        style={{ height: `${heightPercentage}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-500 mt-3">{day.label}</span>
-                  </div>
-                );
-              })}
+          {/* RECHARTS: SALES TREND BAR CHART */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2 flex flex-col min-h-[400px]">
+            <h3 className="text-lg font-extrabold text-gray-900 mb-4">Revenue Trend</h3>
+            {/* FIXED: Added min-w-0 to prevent flexbox rendering issues and explicitly passed height={300} */}
+            <div className="w-full mt-auto min-w-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.salesTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#9CA3AF', fontWeight: 600 }} 
+                    dy={10} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#9CA3AF', fontWeight: 600 }} 
+                    tickFormatter={(value) => `₦${value/1000}k`} 
+                  />
+                  <RechartsTooltip cursor={{ fill: '#F9FAFB' }} content={<CustomBarTooltip />} />
+                  <Bar 
+                    dataKey="sales" 
+                    fill={isGrowth ? '#044e3b' : '#34D399'} 
+                    radius={[6, 6, 0, 0]} 
+                    barSize={40} 
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* CHANNEL BREAKDOWN (Growth Only) or UPSELL (Starter) */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm flex flex-col relative overflow-hidden">
-            <h3 className="text-lg font-extrabold text-gray-900 mb-6">Sales by Channel</h3>
+          {/* RECHARTS: CHANNEL BREAKDOWN DONUT CHART */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm flex flex-col relative overflow-hidden min-h-[400px]">
+            <h3 className="text-lg font-extrabold text-gray-900 mb-2">Sales by Channel</h3>
             
             {isGrowth ? (
-              <div className="flex flex-col justify-center h-full">
-                {/* Visual Representation of Donut Chart using Progress Bars */}
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="flex items-center gap-2">
+              <div className="flex flex-col h-full mt-4">
+                {/* FIXED: Added min-w-0 and explicitly passed height={180} */}
+                <div className="w-full mb-6 min-w-0">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie 
+                        data={pieData} 
+                        cx="50%" 
+                        cy="50%" 
+                        innerRadius={60} 
+                        outerRadius={85} 
+                        paddingAngle={5} 
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<CustomPieTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend Below Chart */}
+                <div className="mt-auto space-y-4">
+                  <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                         <Globe className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-bold text-gray-700">Online Store</span>
                       </div>
-                      <span className="text-sm font-black text-gray-900">
-                        {Math.round((data.overview.onlineRevenue / data.overview.totalRevenue) * 100)}%
-                      </span>
+                      <span className="text-sm font-bold text-gray-700">Online</span>
                     </div>
-                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(data.overview.onlineRevenue / data.overview.totalRevenue) * 100}%` }}></div>
-                    </div>
-                    <p className="text-xs font-medium text-gray-500 mt-1">₦{data.overview.onlineRevenue.toLocaleString()}</p>
+                    <span className="text-sm font-black text-gray-900">
+                      {Math.round((data.overview.onlineRevenue / data.overview.totalRevenue) * 100)}%
+                    </span>
                   </div>
 
-                  <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="flex items-center gap-2">
+                  <div className="flex justify-between items-center bg-orange-50/50 p-3 rounded-xl border border-orange-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
                         <Store className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm font-bold text-gray-700">Offline (Walk-in)</span>
                       </div>
-                      <span className="text-sm font-black text-gray-900">
-                         {Math.round((data.overview.offlineRevenue / data.overview.totalRevenue) * 100)}%
-                      </span>
+                      <span className="text-sm font-bold text-gray-700">Offline</span>
                     </div>
-                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-orange-500 rounded-full" style={{ width: `${(data.overview.offlineRevenue / data.overview.totalRevenue) * 100}%` }}></div>
-                    </div>
-                    <p className="text-xs font-medium text-gray-500 mt-1">₦{data.overview.offlineRevenue.toLocaleString()}</p>
+                    <span className="text-sm font-black text-gray-900">
+                       {Math.round((data.overview.offlineRevenue / data.overview.totalRevenue) * 100)}%
+                    </span>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-3 shadow-sm">
                   <Star className="w-6 h-6 text-purple-600 fill-purple-600" />
                 </div>
-                <h4 className="font-extrabold text-gray-900 mb-2">Advanced Insights</h4>
-                <p className="text-xs font-medium text-gray-600 mb-6">
-                  Upgrade to the Growth plan to unlock channel breakdowns, conversion tracking, and more.
+                <h4 className="font-extrabold text-gray-900 mb-2 text-lg">Advanced Insights</h4>
+                <p className="text-xs font-medium text-gray-600 mb-6 px-4">
+                  Upgrade to Growth to unlock channel breakdowns, conversion tracking, and more.
                 </p>
-                <Link to="/dashboard/billing" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md transition-colors text-sm w-full">
+                <Link to="/dashboard/billing" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-600/20 transition-all text-sm w-full">
                   Upgrade Plan
                 </Link>
               </div>
