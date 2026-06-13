@@ -157,6 +157,7 @@ model Order {
   
   deliveryMethod   String    @default("negotiated")
   paymentMethod    String?   
+  channel        String      @default("ONLINE") // ONLINE or OFFLINE
   paymentReference String? 
   paymentStatus    String    @default("UNPAID")  
   status           String    @default("PENDING")  

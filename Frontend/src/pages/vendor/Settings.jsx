@@ -119,7 +119,7 @@ const Settings = () => {
 
         setCurrentPlan(data.plan || "FREE"); 
         
-        // Silently update local storage so it stays perfectly synced with the DB
+        // update local storage so it stays perfectly synced with the DB
         localStorage.setItem('sabisell_vendor', JSON.stringify({ ...vendor, ...data }));
         
         // Helper function to prevent literal "null" strings
@@ -346,9 +346,7 @@ const Settings = () => {
     <div id="settings-scroll-area" className="flex-1 overflow-y-auto bg-gray-50/50 w-full h-full relative">
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-32 sm:pb-12">
         
-        {/* ========================================== */}
         {/* VIEW 1: MAIN MENU GRID                     */}
-        {/* ========================================== */}
         {activeView === "menu" && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div>
@@ -357,7 +355,7 @@ const Settings = () => {
             </div>
 
             {/* Store Overview Card */}
-            <div className="bg-white rounded-[2rem] p-6 sm:p-8 border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="bg-white rounded-4xl p-6 sm:p-8 border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div className="flex items-center gap-5">
                 <div className="w-16 h-16 bg-[#044e3b] rounded-2xl flex flex-col items-center justify-center text-white border-4 border-emerald-50 shadow-sm shrink-0 overflow-hidden relative">
                   {logoPreview ? (
@@ -367,10 +365,10 @@ const Settings = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-gray-900 text-lg leading-tight truncate max-w-[200px] sm:max-w-sm">
+                  <h3 className="font-extrabold text-gray-900 text-lg leading-tight truncate max-w-50 sm:max-w-sm">
                     {formData.storeName || "My Store"}
                   </h3>
-                  <p className="text-sm font-medium text-gray-500 mt-0.5 truncate max-w-[200px] sm:max-w-sm">
+                  <p className="text-sm font-medium text-gray-500 mt-0.5 truncate max-w-50 sm:max-w-sm">
                     {formData.storeLink}.sabisell.com
                   </p>
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 mt-2 rounded-md w-fit border ${isStoreOnline ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-100 border-gray-200'}`}>
@@ -393,7 +391,6 @@ const Settings = () => {
                  </a>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-500">Toggle Status</span>
-                  {/* AUTO-SAVE TOGGLE HOOKED UP HERE */}
                   <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${isStoreOnline ? "bg-[#044e3b]" : "bg-gray-300"}`} onClick={handleToggleStoreStatus}>
                     <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${isStoreOnline ? "translate-x-6" : "translate-x-0"}`}></div>
                   </div>
@@ -407,7 +404,7 @@ const Settings = () => {
                 <button
                   key={item.id}
                   onClick={() => openForm(item.id)}
-                  className={`bg-white border border-gray-200 p-6 rounded-[2rem] hover:shadow-md transition-all text-left flex flex-col gap-4 group ${item.border}`}
+                  className={`bg-white border border-gray-200 p-6 rounded-4xl hover:shadow-md transition-all text-left flex flex-col gap-4 group ${item.border}`}
                 >
                   <div className="flex justify-between items-start">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${item.color}`}>
@@ -425,14 +422,12 @@ const Settings = () => {
           </div>
         )}
 
-        {/* ========================================== */}
         {/* VIEW 2: FULL SCREEN DETAIL FORMS           */}
-        {/* ========================================== */}
         {activeView !== "menu" && (
-          <div className="w-full bg-white rounded-[2rem] border border-gray-200 shadow-sm animate-in slide-in-from-right-8 duration-300">
+          <div className="w-full bg-white rounded-4xl border border-gray-200 shadow-sm animate-in slide-in-from-right-8 duration-300">
             
             {/* Form Header (Sticky) */}
-            <div className="h-16 sm:h-20 border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 bg-white/90 backdrop-blur-md sticky top-0 z-20 rounded-t-[2rem]">
+            <div className="h-16 sm:h-20 border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 bg-white/90 backdrop-blur-md sticky top-0 z-20 rounded-t-4xl">
               <div className="flex items-center gap-3">
                 <button onClick={goBackToMenu} className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full transition-colors">
                   <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -467,7 +462,7 @@ const Settings = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="sm:col-span-2">
                       <label className="block text-sm font-bold text-gray-900 mb-2">Store Name <span className="text-red-500">*</span></label>
-                      <input type="text" name="storeName" value={formData.storeName} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#044e3b]/20 focus:border-[#044e3b] transition-all font-bold text-gray-900" />
+                      <input type="text" name="storeName" value={formData.storeName} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#044e3b]/20 focus:border-[#044e3b] transition-all font-bold text-gray-900" />
                     </div>
 
                     <div className="sm:col-span-2">

@@ -1,92 +1,6 @@
 const prisma = require('../config/db');
-
-// // @route   POST /api/orders/dummy
-// // @desc    Generate a fake order for testing purposes
-// exports.createDummyOrder = async (req, res) => {
-//   try {
-//     const vendorId = req.vendor.id;
-
-//     // 1. Find at least one product to "buy"
-//     const product = await prisma.product.findFirst({
-//       where: { vendorId, status: "ACTIVE" }
-//     });
-
-//     if (!product) {
-//       return res.status(400).json({ message: "You need to add at least one active product first!" });
-//     }
-
-//     // 2. Create a fake customer for the CRM (Optional for guest checkouts, but good for testing)
-//     const customer = await prisma.customer.create({
-//       data: {
-//         vendorId,
-//         fullName: "Tolu Olayinka",
-//         email: "tolu.test@example.com",
-//         phone: "08012345678",
-//         address: "15 Admiralty Way, Lekki Phase 1, Lagos"
-//       }
-//     });
-
-//     // 3. Generate a random Order Number (e.g., SABI-8392)
-//     const orderNumber = `SABI-${Math.floor(1000 + Math.random() * 9000)}`;
-//     const deliveryFee = 1500.00;
-
-//     // 4. Create the Order and the OrderItem in one transaction using the new schema requirements
-//     const newOrder = await prisma.order.create({
-//       data: {
-//         orderNumber,
-//         vendorId,
-//         customerId: customer.id, // Linking to the CRM record we just made
-        
-//         // --- NEW: Order Snapshots ---
-//         customerName: "Tolu Olayinka",
-//         customerEmail: "tolu.test@example.com",
-//         customerPhone: "08012345678",
-//         shippingAddress: {
-//           address: "15 Admiralty Way",
-//           apartment: "Flat 4B",
-//           city: "Lekki Phase 1",
-//           state: "Lagos"
-//         },
-        
-//         subtotal: product.price,
-//         deliveryFee: deliveryFee,
-//         totalAmount: Number(product.price) + deliveryFee,
-        
-//         status: "Pending", // Aligned with the React UI status casing
-//         paymentMethod: "transfer",
-//         paymentStatus: "PAID",
-        
-//         items: {
-//           create: [
-//             {
-//               productId: product.id,
-//               // --- NEW: Item Snapshots ---
-//               name: product.name,
-//               image: product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : null,
-//               quantity: 1,
-//               priceAtPurchase: product.price
-//             }
-//           ]
-//         }
-//       },
-//       include: {
-//         items: true // Include the items in the response so we can verify they were created
-//       }
-//     });
-
-//     res.status(201).json({
-//       message: "Dummy order generated successfully!",
-//       order: newOrder
-//     });
-
-//   } catch (error) {
-//     console.error("Dummy Order Error:", error);
-//     res.status(500).json({ message: "Server error while creating dummy order." });
-//   }
-// };
-
 // @route   GET /api/orders
-// @desc    Get all orders for the vendor dashboard
+// @desc    Get all orders for the vendor dashboard/sales page
 exports.getVendorOrders = async (req, res) => {
   try {
     const vendorId = req.vendor.id;
@@ -94,16 +8,25 @@ exports.getVendorOrders = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: { vendorId },
       include: {
-        // Because of our new snapshots, we only need to include items. 
-        // We no longer have to deeply include the Customer or Product tables!
         items: true
       },
       orderBy: { createdAt: 'desc' }
     });
 
+    // Map the database output to exactly match what the Sales.jsx frontend expects
+    const formattedOrders = orders.map(order => ({
+      id: order.orderNumber,
+      customerName: order.customerName || "Guest User",
+      channel: order.channel ? order.channel.toUpperCase() : "ONLINE", // Default to ONLINE if missing
+      paymentMethod: order.paymentMethod ? order.paymentMethod.toUpperCase() : "CARD",
+      total: order.totalAmount,
+      date: order.createdAt,
+      status: order.status
+    }));
+
     res.status(200).json({
-      count: orders.length,
-      orders
+      count: formattedOrders.length,
+      orders: formattedOrders
     });
 
   } catch (error) {
@@ -112,25 +35,122 @@ exports.getVendorOrders = async (req, res) => {
   }
 };
 
+// @route   POST /api/orders/offline
+// @desc    Record an offline sale and automatically deduct inventory
+exports.recordOfflineSale = async (req, res) => {
+  try {
+    const vendorId = req.vendor.id;
+    const { productId, quantity, customerName, paymentMethod, amountPaid } = req.body;
+
+    // 1. Verify Vendor Plan
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { plan: true }
+    });
+
+    const currentPlan = vendor.plan || "FREE";
+    if (currentPlan === "FREE") {
+      return res.status(403).json({ message: "Offline sales tracking requires the Starter or Growth plan." });
+    }
+
+    // 2. Verify Product and Stock availability
+    const product = await prisma.product.findFirst({
+      where: { id: productId, vendorId: vendorId, status: { not: "ARCHIVED" } }
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    const parsedQuantity = parseInt(quantity);
+    if (product.stockQuantity < parsedQuantity) {
+      return res.status(400).json({ 
+        message: `Insufficient stock. You only have ${product.stockQuantity} units left.` 
+      });
+    }
+
+    // 3. Generate Offline Order Number
+    const orderNumber = `OFF-${Math.floor(1000 + Math.random() * 9000)}`;
+    const parsedAmountPaid = parseFloat(amountPaid);
+
+    // 4. Perform Prisma Transaction
+    const transaction = await prisma.$transaction(async (tx) => {
+      
+      // A. Create the Order with snapshot items
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          vendorId,
+          customerName: customerName || "Walk-in Customer",
+          
+          customerEmail: "N/A", 
+          customerPhone: "N/A",
+          
+          // Pass a fallback JSON object to satisfy the shippingAddress requirement ---
+          shippingAddress: {
+            address: "In-Store Pickup",
+            city: "N/A",
+            state: "N/A"
+          },
+          
+          subtotal: parsedAmountPaid,
+          deliveryFee: 0,
+          totalAmount: parsedAmountPaid,
+          status: "Delivered", // Offline sales are instantly fulfilled
+          paymentMethod: paymentMethod, // CASH, POS, TRANSFER
+          paymentStatus: "PAID",
+          channel: "OFFLINE", 
+          items: {
+            create: [
+              {
+                productId: product.id,
+                name: product.name,
+                image: product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : null,
+                quantity: parsedQuantity,
+                priceAtPurchase: parsedAmountPaid / parsedQuantity // Unit price logic
+              }
+            ]
+          }
+        },
+      });
+
+      // B. Deduct the stock from the Product
+      await tx.product.update({
+        where: { id: productId },
+        data: {
+          stockQuantity: {
+            decrement: parsedQuantity
+          }
+        }
+      });
+
+      return newOrder;
+    });
+
+    res.status(201).json({ message: "Offline sale recorded successfully!", order: transaction });
+
+  } catch (error) {
+    console.error("Record Offline Sale Error:", error);
+    res.status(500).json({ message: "Server error while recording offline sale." });
+  }
+};
+
 // @route   PUT /api/orders/:id/status
 // @desc    Update order status (e.g., Pending -> Shipped)
 exports.updateOrderStatus = async (req, res) => {
   try {
     const vendorId = req.vendor.id;
-    const { id } = req.params; // The order ID from the URL
+    const { id } = req.params; // Order ID
     const { status } = req.body;
 
-    // Adjusted to match standard e-commerce fulfillment statuses
     const validStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
     
-    // Case-insensitive check just to be safe
     const matchedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase());
     
     if (!matchedStatus) {
       return res.status(400).json({ message: "Invalid status update." });
     }
 
-    // Ensure the order actually belongs to this logged-in vendor
     const updatedOrder = await prisma.order.updateMany({
       where: { id, vendorId },
       data: { status: matchedStatus }

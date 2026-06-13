@@ -12,4 +12,6 @@ router.get('/', protect, orderController.getVendorOrders);
 // PUT: Update order status (Requires the order ID in the URL)
 router.put('/:id/status', protect, orderController.updateOrderStatus);
 
+router.post('/offline', protect, orderController.recordOfflineSale);
+
 module.exports = router;
