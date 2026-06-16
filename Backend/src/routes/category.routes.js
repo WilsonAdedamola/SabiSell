@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/category.controller');
-const { protect } = require('../middlewares/auth.middleware'); // Adjust path if needed
+const { protect } = require('../middlewares/auth.middleware');
 
-// All category routes require the vendor to be logged in
 router.use(protect);
 
 router.route('/')

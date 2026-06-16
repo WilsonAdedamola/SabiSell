@@ -10,26 +10,32 @@ import {
 } from "lucide-react";
 import api from '../../utils/api'; 
 import { OrdersSkeleton } from "../../components/shared/Skeletons";
+import Toast from "../../components/shared/Toast";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState(null); 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Orders");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null); 
+  
+  // New States for Dropdown UI
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false); 
+  
   const itemsPerPage = 8;
 
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const response = await api.get('/orders');
-      setOrders(response.data.orders);
+      const onlineOrdersOnly = response.data.orders.filter(order => order.channel !== 'OFFLINE');
+      setOrders(onlineOrdersOnly);
     } catch (err) {
       console.error("Fetch Orders Error:", err);
-      setError("Failed to sync orders with database.");
+      setToast({ message: "Failed to sync orders with database.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -40,15 +46,29 @@ const Orders = () => {
   }, []);
 
   const handleStatusUpdate = async (orderId, newStatus) => {
+    // 1. Close dropdown and show loading state immediately
+    setIsStatusDropdownOpen(false);
+    setIsUpdatingStatus(true);
+
     try {
-      await api.put(`/orders/${orderId}/status`, { status: newStatus });
+      // 2. Run API call and a forced 1.5s delay concurrently (to guarantee the visual loading effect)
+      const apiCall = api.put(`/orders/${orderId}/status`, { status: newStatus });
+      const artificialDelay = new Promise(resolve => setTimeout(resolve, 1500));
+      
+      await Promise.all([apiCall, artificialDelay]);
+
+      // 3. Update UI states on success
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(prev => ({ ...prev, status: newStatus }));
       }
-      setIsStatusDropdownOpen(false);
+      
+      setToast({ message: `Order status updated to ${newStatus}!`, type: "success" });
     } catch (err) {
-      alert("Failed to update status.");
+      setToast({ message: err.response?.data?.message || "Failed to update status.", type: "error" });
+    } finally {
+      // 4. Remove loading state
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -64,6 +84,7 @@ const Orders = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
@@ -92,15 +113,15 @@ const Orders = () => {
     doc.setFont("helvetica", "bold");
     doc.text("Order Details:", 20, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`Order ID: ${order.orderNumber}`, 20, y + 6);
-    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, 20, y + 12);
-    doc.text(`Status: ${order.status}`, 20, y + 18);
+    doc.text(`Order ID: ${order.orderNumber || "N/A"}`, 20, y + 6);
+    doc.text(`Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "N/A"}`, 20, y + 12);
+    doc.text(`Status: ${order.status || "N/A"}`, 20, y + 18);
 
     doc.setFont("helvetica", "bold");
     doc.text("Billed To:", 120, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`${order.customerName}`, 120, y + 6);
-    doc.text(`${order.customerPhone}`, 120, y + 12);
+    doc.text(`${order.customerName || "Guest"}`, 120, y + 6);
+    if (order.customerPhone) doc.text(`${order.customerPhone}`, 120, y + 12);
     if (order.customerEmail) doc.text(`${order.customerEmail}`, 120, y + 18);
 
     y += 30;
@@ -111,7 +132,7 @@ const Orders = () => {
     doc.setFont("helvetica", "normal");
     doc.text(`${order.shippingAddress?.address || "N/A"}`, 20, y + 6);
     const apt = order.shippingAddress?.apartment ? `${order.shippingAddress.apartment}, ` : "";
-    doc.text(`${apt}${order.shippingAddress?.city}, ${order.shippingAddress?.state}, ${order.shippingAddress?.country || "Nigeria"}`, 20, y + 12);
+    doc.text(`${apt}${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""}, ${order.shippingAddress?.country || "Nigeria"}`, 20, y + 12);
     if (order.shippingAddress?.landmark) {
       doc.text(`Landmark: ${order.shippingAddress.landmark}`, 20, y + 18);
       y += 6;
@@ -131,14 +152,14 @@ const Orders = () => {
     y += 10;
     doc.setFont("helvetica", "normal");
 
-    // 5. Items Loop
-    order.items.forEach(item => {
-      const itemTotal = item.quantity * Number(item.priceAtPurchase);
-      const splitName = doc.splitTextToSize(item.name, 90); 
+    // 5. Items Loop 
+    order.items?.forEach(item => {
+      const itemTotal = item.quantity * Number(item.priceAtPurchase || 0);
+      const splitName = doc.splitTextToSize(item.name || "Unknown Item", 90); 
       doc.text(splitName, 22, y);
       
-      doc.text(`${item.quantity}`, 120, y);
-      doc.text(`NGN ${Number(item.priceAtPurchase).toLocaleString()}`, 140, y);
+      doc.text(`${item.quantity || 0}`, 120, y);
+      doc.text(`NGN ${Number(item.priceAtPurchase || 0).toLocaleString()}`, 140, y);
       doc.text(`NGN ${itemTotal.toLocaleString()}`, 170, y);
       
       y += splitName.length * 6 + 4; 
@@ -151,17 +172,17 @@ const Orders = () => {
 
     // 6. Totals Section
     doc.text("Subtotal:", 130, y);
-    doc.text(`NGN ${Number(order.subtotal).toLocaleString()}`, 170, y);
+    doc.text(`NGN ${Number(order.subtotal || 0).toLocaleString()}`, 170, y);
     y += 8;
     
     doc.text("Delivery Fee:", 130, y);
-    doc.text(order.deliveryMethod === 'negotiated' ? 'Negotiated' : `NGN ${Number(order.deliveryFee).toLocaleString()}`, 170, y);
+    doc.text(order.deliveryMethod === 'negotiated' ? 'Negotiated' : `NGN ${Number(order.deliveryFee || 0).toLocaleString()}`, 170, y);
     y += 8;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Total Amount:", 130, y);
-    doc.text(`NGN ${Number(order.totalAmount).toLocaleString()}`, 170, y);
+    doc.text(`NGN ${Number(order.totalAmount || 0).toLocaleString()}`, 170, y);
 
     // 7. Footer Note
     y += 25;
@@ -169,25 +190,26 @@ const Orders = () => {
     doc.setFontSize(9);
     doc.text("Thank you for your business", 105, y, { align: "center" });
 
-    doc.save(`Invoice_${order.orderNumber}.pdf`);
+    doc.save(`Invoice_${order.orderNumber || "Order"}.pdf`);
   };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+      (order.orderNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (order.customerName || "").toLowerCase().includes(searchQuery.toLowerCase());
+    
     const matchesTab = activeTab === "All Orders" || order.status === activeTab;
     return matchesSearch && matchesTab;
   });
 
-  const totalRevenue = orders.filter(o => o.status !== "Cancelled").reduce((sum, o) => sum + Number(o.totalAmount), 0);
+  const totalRevenue = orders.filter(o => o.status !== "Cancelled").reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
   const pendingCount = orders.filter(o => o.status === "Pending").length;
   const completedCount = orders.filter(o => o.status === "Delivered").length;
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
   const currentOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // --- NEW: Dynamic Tabs Data with Counts ---
+  // Dynamic Tabs Data with Counts
   const tabsData = [
     { name: "All Orders", count: orders.length },
     { name: "Pending", count: pendingCount },
@@ -202,13 +224,17 @@ const Orders = () => {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative bg-sabi-surface">
+      
+      {/* RENDER TOAST HERE */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="w-full max-w-7xl mx-auto space-y-6">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">Orders</h1>
-            <p className="text-sm font-medium text-gray-500 mt-1">Real-time data from your storefront.</p>
+            <p className="text-sm font-medium text-gray-500 mt-1">Manage your online storefront orders here.</p>
           </div>
           <button 
             onClick={fetchOrders} 
@@ -221,7 +247,7 @@ const Orders = () => {
         {/* METRICS CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-500 mb-4">Total Revenue</h3>
+            <h3 className="text-sm font-bold text-gray-500 mb-4">Total Revenue (Online)</h3>
             <p className="text-2xl font-extrabold text-gray-900">₦{totalRevenue.toLocaleString()}</p>
           </div>
           <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
@@ -246,7 +272,7 @@ const Orders = () => {
           />
         </div>
 
-        {/* --- UPDATED TABS WITH COUNTS --- */}
+        {/* UPDATED TABS WITH COUNTS */}
         <div className="flex overflow-x-auto hide-scrollbar gap-3 pb-2">
           {tabsData.map((tab) => (
             <button 
@@ -281,21 +307,21 @@ const Orders = () => {
                   <div key={order.id} onClick={() => setSelectedOrder(order)} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer relative">
                     <div className="flex justify-between mb-2">
                       <span className="font-bold text-gray-900 flex items-center gap-2">
-                        {order.orderNumber}
+                        {order.orderNumber || "N/A"}
                         {order.shippingAddress?.country === 'International Shipping' && (
                           <Globe className="w-3.5 h-3.5 text-blue-500" />
                         )}
                       </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatusDetails(order.status).color}`}>
-                        {order.status}
+                        {order.status || "Unknown"}
                       </span>
                     </div>
                     <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-sm font-bold text-gray-700">{order.customerName}</p>
+                        <p className="text-sm font-bold text-gray-700">{order.customerName || "Guest"}</p>
                         <p className="text-xs text-gray-400">{formatDate(order.createdAt)}</p>
                       </div>
-                      <p className="font-black text-gray-900">₦{Number(order.totalAmount).toLocaleString()}</p>
+                      <p className="font-black text-gray-900">₦{Number(order.totalAmount || 0).toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
@@ -319,23 +345,23 @@ const Orders = () => {
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <span className="font-bold text-gray-900 flex items-center gap-2">
-                            {order.orderNumber}
+                            {order.orderNumber || "N/A"}
                             {order.shippingAddress?.country === 'International Shipping' && (
                               <Globe className="w-4 h-4 text-blue-500" title="International Order" />
                             )}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <p className="font-bold text-gray-900">{order.customerName}</p>
-                          <p className="text-xs text-gray-400">{order.customerPhone}</p>
+                          <p className="font-bold text-gray-900">{order.customerName || "Guest"}</p>
+                          <p className="text-xs text-gray-400">{order.customerPhone || "No Phone"}</p>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">{formatDate(order.createdAt)}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase border ${getStatusDetails(order.status).color}`}>
-                            {order.status}
+                            {order.status || "Unknown"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-black text-gray-900 text-right">₦{Number(order.totalAmount).toLocaleString()}</td>
+                        <td className="px-6 py-4 font-black text-gray-900 text-right">₦{Number(order.totalAmount || 0).toLocaleString()}</td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex items-center justify-center">
                             <button 
@@ -391,7 +417,7 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* --- DETAILED SIDE DRAWER MODAL --- */}
+      {/* DETAILED SIDE DRAWER MODAL */}
       {selectedOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-end bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg h-full bg-white rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300 relative">
@@ -399,8 +425,8 @@ const Orders = () => {
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative">
               <div>
-                <h2 className="text-xl font-extrabold text-gray-900">{selectedOrder.orderNumber}</h2>
-                <p className="text-xs font-medium text-gray-500">Placed on {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                <h2 className="text-xl font-extrabold text-gray-900">{selectedOrder.orderNumber || "N/A"}</h2>
+                <p className="text-xs font-medium text-gray-500">Placed on {selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString() : "N/A"}</p>
               </div>
               <button onClick={() => { setSelectedOrder(null); setIsStatusDropdownOpen(false); }} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 transition-colors">
                 <X className="w-5 h-5" />
@@ -423,7 +449,7 @@ const Orders = () => {
                         <Package className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{selectedOrder.customerName}</p>
+                        <p className="text-sm font-bold text-gray-900">{selectedOrder.customerName || "Guest"}</p>
                         <p className="text-xs text-gray-500">{selectedOrder.customerEmail || "No email provided"}</p>
                       </div>
                     </div>
@@ -434,21 +460,23 @@ const Orders = () => {
                       <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                         <Phone className="w-5 h-5" />
                       </div>
-                      <p className="text-sm font-bold text-gray-900">{selectedOrder.customerPhone}</p>
+                      <p className="text-sm font-bold text-gray-900">{selectedOrder.customerPhone || "No Phone"}</p>
                     </div>
-                    <a 
-                      href={`https://wa.me/${formatWhatsAppNumber(selectedOrder.customerPhone)}?text=Hello ${selectedOrder.customerName}, this is regarding your order ${selectedOrder.orderNumber}...`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-[#25D366] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#20b958] transition-colors shadow-sm"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                    </a>
+                    {selectedOrder.customerPhone && (
+                      <a 
+                        href={`https://wa.me/${formatWhatsAppNumber(selectedOrder.customerPhone)}?text=Hello ${selectedOrder.customerName || "there"}, this is regarding your order ${selectedOrder.orderNumber}...`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-[#25D366] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#20b958] transition-colors shadow-sm"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* --- NEW: International Delivery Alert --- */}
+              {/* NEW: International Delivery Alert */}
               {selectedOrder.shippingAddress?.country === 'International Shipping' && (
                 <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
                   <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
@@ -491,9 +519,9 @@ const Orders = () => {
                   <div className="flex gap-3">
                     <MapPin className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
                     <div className="text-sm text-gray-700 font-medium leading-relaxed">
-                      <p>{selectedOrder.shippingAddress?.address}</p>
+                      <p>{selectedOrder.shippingAddress?.address || "N/A"}</p>
                       {selectedOrder.shippingAddress?.apartment && <p>{selectedOrder.shippingAddress.apartment}</p>}
-                      <p>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state}, {selectedOrder.shippingAddress?.country || "Nigeria"}</p>
+                      <p>{selectedOrder.shippingAddress?.city || ""}, {selectedOrder.shippingAddress?.state || ""}, {selectedOrder.shippingAddress?.country || "Nigeria"}</p>
                       {selectedOrder.shippingAddress?.landmark && (
                         <p className="text-xs text-orange-600 mt-2 font-bold italic">Landmark: {selectedOrder.shippingAddress.landmark}</p>
                       )}
@@ -516,16 +544,16 @@ const Orders = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate mb-1">{item.name}</p>
-                        <p className="text-[11px] text-gray-500 font-medium">Price: ₦{Number(item.priceAtPurchase).toLocaleString()}</p>
+                        <p className="text-sm font-bold text-gray-900 truncate mb-1">{item.name || "Unknown Item"}</p>
+                        <p className="text-[11px] text-gray-500 font-medium">Price: ₦{Number(item.priceAtPurchase || 0).toLocaleString()}</p>
                       </div>
                       
                       <div className="flex flex-col items-end gap-1.5 pl-2">
                         <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 font-black rounded-lg text-xs">
-                          Qty: {item.quantity}
+                          Qty: {item.quantity || 1}
                         </span>
                         <span className="text-sm font-black text-gray-900">
-                          ₦{(item.quantity * Number(item.priceAtPurchase)).toLocaleString()}
+                          ₦{((item.quantity || 1) * Number(item.priceAtPurchase || 0)).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -537,17 +565,17 @@ const Orders = () => {
               <div className="pt-4 border-t border-gray-100 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 font-medium">Subtotal</span>
-                  <span className="font-bold text-gray-900">₦{Number(selectedOrder.subtotal).toLocaleString()}</span>
+                  <span className="font-bold text-gray-900">₦{Number(selectedOrder.subtotal || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 font-medium">Delivery Fee</span>
                   <span className="font-bold text-gray-900">
-                    {selectedOrder.deliveryMethod === 'negotiated' ? 'Negotiated' : `₦${Number(selectedOrder.deliveryFee).toLocaleString()}`}
+                    {selectedOrder.deliveryMethod === 'negotiated' ? 'Negotiated' : `₦${Number(selectedOrder.deliveryFee || 0).toLocaleString()}`}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-3 mt-1 border-t border-gray-100 text-lg">
                   <span className="font-bold text-gray-900">Total</span>
-                  <span className="font-black text-[#044e3b]">₦{Number(selectedOrder.totalAmount).toLocaleString()}</span>
+                  <span className="font-black text-[#044e3b]">₦{Number(selectedOrder.totalAmount || 0).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -557,17 +585,27 @@ const Orders = () => {
               
               <div className="relative">
                 <button 
-                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 transition-colors"
+                  onClick={() => !isUpdatingStatus && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                  disabled={isUpdatingStatus}
+                  className="w-full flex items-center justify-between px-4 py-3.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   <span className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${getStatusDetails(selectedOrder.status).color.split(' ')[0]}`}></span>
-                    {selectedOrder.status}
+                    {isUpdatingStatus ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#044e3b]" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <span className={`w-2 h-2 rounded-full ${getStatusDetails(selectedOrder.status).color.split(' ')[0]}`}></span>
+                        {selectedOrder.status || "Status"}
+                      </>
+                    )}
                   </span>
-                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                  {!isUpdatingStatus && <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />}
                 </button>
 
-                {isStatusDropdownOpen && (
+                {isStatusDropdownOpen && !isUpdatingStatus && (
                   <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
                     {allStatuses.map(status => (
                       <button
