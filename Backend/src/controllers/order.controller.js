@@ -8,20 +8,23 @@ exports.getVendorOrders = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: { vendorId },
       include: {
-        items: true
+        items: true // Crucial: Includes the purchased products for the Orders Details modal
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    // Map the database output to exactly match what the Sales.jsx frontend expects
+    // Map the database output to include BOTH the raw data (for Orders.jsx) 
+    // AND the aliases (for Sales.jsx)
     const formattedOrders = orders.map(order => ({
-      id: order.orderNumber,
-      customerName: order.customerName || "Guest User",
-      channel: order.channel ? order.channel.toUpperCase() : "ONLINE", // Default to ONLINE if missing
-      paymentMethod: order.paymentMethod ? order.paymentMethod.toUpperCase() : "CARD",
-      total: order.totalAmount,
+      ...order, // <--- THIS RESTORES ALL DETAILS (shippingAddress, items, phone, subtotal, etc.)
+      
+      // Aliases required specifically for the Sales.jsx page formatting
+      id: order.orderNumber, 
+      total: order.totalAmount, 
       date: order.createdAt,
-      status: order.status
+      customerName: order.customerName || "Guest User",
+      channel: order.channel ? order.channel.toUpperCase() : "ONLINE",
+      paymentMethod: order.paymentMethod ? order.paymentMethod.toUpperCase() : "CARD",
     }));
 
     res.status(200).json({
@@ -140,7 +143,7 @@ exports.recordOfflineSale = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const vendorId = req.vendor.id;
-    const { id } = req.params; // Order ID
+    const { id } = req.params; // This receives the orderNumber from the frontend (e.g., SABI-1234)
     const { status } = req.body;
 
     const validStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
@@ -151,8 +154,15 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status update." });
     }
 
+    // FIXED: Use OR to find the order by either its UUID or its orderNumber
     const updatedOrder = await prisma.order.updateMany({
-      where: { id, vendorId },
+      where: { 
+        vendorId,
+        OR: [
+          { id: id },
+          { orderNumber: id }
+        ]
+      },
       data: { status: matchedStatus }
     });
 

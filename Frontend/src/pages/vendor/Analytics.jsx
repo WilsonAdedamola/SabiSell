@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, Users, ShoppingCart, Package, Lock, Star, 
-  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter
+  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, Loader2
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
@@ -10,12 +10,14 @@ import {
 } from 'recharts';
 import api from '../../utils/api';
 import { DashboardSkeleton } from "../../components/shared/Skeletons";
+import Toast from "../../components/shared/Toast";
 
 const Analytics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState("Last 7 Days");
+  const [error, setError] = useState(null);
   
-  // Simulated Analytics Data
+  // Real Data State
   const [data, setData] = useState(null);
 
   // Vendor Plan Logic
@@ -27,45 +29,31 @@ const Analytics = () => {
   const isGrowth = currentPlan === "GROWTH";
 
   useEffect(() => {
+    // If they are on Free, don't bother fetching data
     if (isFree) {
       setIsLoading(false);
       return;
     }
 
-    // Simulate fetching analytics data from backend
-    setTimeout(() => {
-      setData({
-        overview: {
-          totalRevenue: 854000,
-          revenueGrowth: 12.5,
-          totalOrders: 142,
-          ordersGrowth: 8.2,
-          storeVisits: 3840,
-          visitsGrowth: -2.4,
-          conversionRate: 3.7,
-          conversionGrowth: 1.1,
-          onlineRevenue: 524000,
-          offlineRevenue: 330000,
-        },
-        salesTrend: [
-          { label: "Mon", sales: 45000 },
-          { label: "Tue", sales: 82000 },
-          { label: "Wed", sales: 55000 },
-          { label: "Thu", sales: 110000 },
-          { label: "Fri", sales: 95000 },
-          { label: "Sat", sales: 145000 },
-          { label: "Sun", sales: 120000 },
-        ],
-        topProducts: [
-          { id: 1, name: "Luxury Silk Agbada", category: "Men's Wear", sold: 42, revenue: 315000, stock: 8 },
-          { id: 2, name: "Gold Plated Chronograph", category: "Accessories", sold: 28, revenue: 140000, stock: 15 },
-          { id: 3, name: "Leather Tote Bag", category: "Women's Wear", sold: 19, revenue: 114000, stock: 3 },
-          { id: 4, name: "Vintage Sunglasses", category: "Accessories", sold: 15, revenue: 45000, stock: 0 },
-        ]
-      });
-      setIsLoading(false);
-    }, 1000);
-  }, [isFree]);
+    const fetchAnalytics = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch real analytics, passing the selected date range to the backend
+        const response = await api.get('/analytics', {
+          params: { range: dateRange }
+        });
+        setData(response.data);
+      } catch (err) {
+        console.error("Failed to load analytics", err);
+        setError("Failed to load analytics data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [isFree, dateRange]); // Re-fetch whenever dateRange changes!
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -105,6 +93,17 @@ const Analytics = () => {
     );
   }
 
+  if (error || !data) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 font-bold mb-4">{error || "Something went wrong."}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-900 text-white rounded-xl">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   // --- RECHARTS CUSTOM TOOLTIPS ---
   const CustomBarTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -136,10 +135,10 @@ const Analytics = () => {
   };
 
   // Data for the Donut Chart
-  const pieData = data ? [
-    { name: 'Online Sales', value: data.overview.onlineRevenue, color: '#2563EB' }, // Blue
-    { name: 'Offline Sales', value: data.overview.offlineRevenue, color: '#EA580C' } // Orange
-  ] : [];
+  const pieData = [
+    { name: 'Online Sales', value: data.overview.onlineRevenue, color: '#2563EB' },
+    { name: 'Offline Sales', value: data.overview.offlineRevenue, color: '#EA580C' }
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
@@ -267,7 +266,6 @@ const Analytics = () => {
           {/* RECHARTS: SALES TREND BAR CHART */}
           <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2 flex flex-col min-h-[400px]">
             <h3 className="text-lg font-extrabold text-gray-900 mb-4">Revenue Trend</h3>
-            {/* FIXED: Added min-w-0 to prevent flexbox rendering issues and explicitly passed height={300} */}
             <div className="w-full mt-auto min-w-0">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.salesTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -303,7 +301,6 @@ const Analytics = () => {
             
             {isGrowth ? (
               <div className="flex flex-col h-full mt-4">
-                {/* FIXED: Added min-w-0 and explicitly passed height={180} */}
                 <div className="w-full mb-6 min-w-0">
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
@@ -336,7 +333,9 @@ const Analytics = () => {
                       <span className="text-sm font-bold text-gray-700">Online</span>
                     </div>
                     <span className="text-sm font-black text-gray-900">
-                      {Math.round((data.overview.onlineRevenue / data.overview.totalRevenue) * 100)}%
+                      {data.overview.totalRevenue > 0 
+                        ? Math.round((data.overview.onlineRevenue / data.overview.totalRevenue) * 100) 
+                        : 0}%
                     </span>
                   </div>
 
@@ -348,7 +347,9 @@ const Analytics = () => {
                       <span className="text-sm font-bold text-gray-700">Offline</span>
                     </div>
                     <span className="text-sm font-black text-gray-900">
-                       {Math.round((data.overview.offlineRevenue / data.overview.totalRevenue) * 100)}%
+                      {data.overview.totalRevenue > 0 
+                        ? Math.round((data.overview.offlineRevenue / data.overview.totalRevenue) * 100) 
+                        : 0}%
                     </span>
                   </div>
                 </div>
@@ -380,52 +381,58 @@ const Analytics = () => {
             </Link>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-bold">
-                  <th className="p-4 pl-6">Product Name</th>
-                  <th className="p-4 text-center">Units Sold</th>
-                  <th className="p-4 text-right">Revenue Generated</th>
-                  <th className="p-4 text-center pr-6">Current Stock</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {(isGrowth ? data.topProducts : data.topProducts.slice(0, 2)).map((product, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4 pl-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 border border-gray-200">
-                          <Package className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-900">{product.name}</h4>
-                          <p className="text-[10px] font-medium text-gray-500">{product.category}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-center text-sm font-bold text-gray-600">
-                      {product.sold}
-                    </td>
-                    <td className="p-4 text-right text-sm font-black text-[#044e3b]">
-                      ₦{product.revenue.toLocaleString()}
-                    </td>
-                    <td className="p-4 pr-6 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
-                        product.stock === 0 ? "bg-red-50 text-red-700" : 
-                        product.stock <= 5 ? "bg-orange-50 text-orange-700" : "bg-emerald-50 text-emerald-700"
-                      }`}>
-                        {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
-                      </span>
-                    </td>
+          {data.topProducts.length === 0 ? (
+            <div className="p-10 text-center text-gray-500 font-medium text-sm border-t border-gray-100">
+               No product sales recorded yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-bold">
+                    <th className="p-4 pl-6">Product Name</th>
+                    <th className="p-4 text-center">Units Sold</th>
+                    <th className="p-4 text-right">Revenue Generated</th>
+                    <th className="p-4 text-center pr-6">Current Stock</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(isGrowth ? data.topProducts : data.topProducts.slice(0, 2)).map((product, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-4 pl-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 border border-gray-200">
+                            <Package className="w-5 h-5 text-gray-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900">{product.name}</h4>
+                            <p className="text-[10px] font-medium text-gray-500">{product.category}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center text-sm font-bold text-gray-600">
+                        {product.sold}
+                      </td>
+                      <td className="p-4 text-right text-sm font-black text-[#044e3b]">
+                        ₦{product.revenue.toLocaleString()}
+                      </td>
+                      <td className="p-4 pr-6 text-center">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                          product.stock === 0 ? "bg-red-50 text-red-700" : 
+                          product.stock <= 5 ? "bg-orange-50 text-orange-700" : "bg-emerald-50 text-emerald-700"
+                        }`}>
+                          {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           
           {/* Add prompt at bottom of table if they are Starter seeing limited list */}
-          {!isGrowth && (
+          {!isGrowth && data.topProducts.length > 0 && (
             <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
               <p className="text-xs font-bold text-gray-500">
                 Showing top 2 products. <Link to="/dashboard/billing" className="text-purple-600 hover:underline">Upgrade to Growth</Link> to see full analytics list.

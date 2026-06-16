@@ -76,6 +76,9 @@ const Dashboard = () => {
         : `${window.location.protocol}//${vendor.storeLink}.${window.location.host.replace('www.', '')}`)
     : "#";
 
+  // --- STRICTLY FILTER OUT OFFLINE SALES FROM RECENT ORDERS ---
+  const onlineRecentOrders = dashboardData?.recentOrders?.filter(order => order.channel !== 'OFFLINE') || [];
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative">
       <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500 mt-4 sm:mt-0">
@@ -323,45 +326,51 @@ const Dashboard = () => {
             {dashboardState === "active" && (
               <div className="bg-white rounded-4xl p-6 lg:p-8 border border-gray-100 shadow-sm flex flex-col mt-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-extrabold text-gray-900">Recent Orders</h3>
+                  <h3 className="text-lg font-extrabold text-gray-900">Recent Online Orders</h3>
                   <Link to="/dashboard/orders" className="text-sabi-primary text-sm font-bold flex items-center hover:underline">
                     View All <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
 
-                {dashboardData?.recentOrders?.length === 0 ? (
+                {onlineRecentOrders.length === 0 ? (
                   <div className="text-center py-10 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm">
                       <ShoppingCart className="w-6 h-6 text-gray-300" />
                     </div>
-                    <p className="text-gray-500 text-sm font-bold mb-1">No orders yet</p>
+                    <p className="text-gray-500 text-sm font-bold mb-1">No online orders yet</p>
                     <p className="text-gray-400 text-xs font-medium max-w-xs mx-auto">Share your store link on social media to get your first sale!</p>
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scrollbar pr-2">
-                    {dashboardData?.recentOrders?.map((order, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors cursor-pointer bg-gray-50/50 hover:bg-emerald-50/30 group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-900 font-extrabold border border-gray-200 uppercase shadow-sm">
-                            {order.customer.fullName.charAt(0)}
+                    {onlineRecentOrders.map((order, i) => {
+                      const customerName = order.customerName || order.customer?.fullName || "Guest";
+                      const orderId = order.orderNumber || order.id || "N/A";
+                      const amount = order.totalAmount || order.total || 0;
+
+                      return (
+                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors cursor-pointer bg-gray-50/50 hover:bg-emerald-50/30 group">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-900 font-extrabold border border-gray-200 uppercase shadow-sm">
+                              {customerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-sabi-primary transition-colors">{customerName}</h4>
+                              <p className="text-xs font-bold text-gray-400 mt-0.5">{orderId}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-sabi-primary transition-colors">{order.customer.fullName}</h4>
-                            <p className="text-xs font-bold text-gray-400 mt-0.5">{order.orderNumber}</p>
+                          <div className="text-right flex flex-col items-end gap-2">
+                            <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider ${
+                              order.status === "PENDING" ? "bg-orange-100 text-orange-700" : 
+                              order.status === "PAID" || order.status === "DELIVERED" ? "bg-emerald-100 text-emerald-700" : "bg-gray-200 text-gray-700"
+                            }`}>{order.status || "COMPLETED"}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-black text-gray-900">₦{parseFloat(amount).toLocaleString()}</span>
+                              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-sabi-primary transition-colors" />
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right flex flex-col items-end gap-2">
-                          <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider ${
-                            order.status === "PENDING" ? "bg-orange-100 text-orange-700" : 
-                            order.status === "PAID" || order.status === "DELIVERED" ? "bg-emerald-100 text-emerald-700" : "bg-gray-200 text-gray-700"
-                          }`}>{order.status}</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-black text-gray-900">₦{parseFloat(order.totalAmount).toLocaleString()}</span>
-                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-sabi-primary transition-colors" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -21,6 +21,7 @@ const storefrontRoutes = require('./routes/storefront.routes');
 const categoryRoutes = require('./routes/category.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -32,11 +33,8 @@ app.use('/api/storefront', storefrontRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-// A simple test route
-// app.get('/api/health', (req, res) => {
-//   res.status(200).json({ status: 'success', message: 'SabiSell Backend is running!' });
-// });
 
 const PORT = process.env.PORT || 5000;
 
