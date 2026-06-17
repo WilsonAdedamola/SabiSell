@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, Users, ShoppingCart, Package, Lock, Star, 
-  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, Loader2
+  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, Loader2, CheckCircle2
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
@@ -53,7 +53,7 @@ const Analytics = () => {
     };
 
     fetchAnalytics();
-  }, [isFree, dateRange]); // Re-fetch whenever dateRange changes!
+  }, [isFree, dateRange]); // Re-fetches live whenever dateRange dropdown changes!
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -111,7 +111,7 @@ const Analytics = () => {
         <div className="bg-gray-900 text-white p-3 rounded-xl shadow-xl border border-gray-700">
           <p className="text-gray-400 text-xs font-bold mb-1">{label}</p>
           <p className="text-lg font-black tracking-tight">
-            ₦{payload[0].value.toLocaleString()}
+            ₦{Number(payload[0].value || 0).toLocaleString()}
           </p>
         </div>
       );
@@ -126,7 +126,7 @@ const Analytics = () => {
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.color }}></div>
           <div>
             <p className="text-gray-500 text-xs font-bold">{payload[0].name}</p>
-            <p className="text-gray-900 text-sm font-black">₦{payload[0].value.toLocaleString()}</p>
+            <p className="text-gray-900 text-sm font-black">₦{Number(payload[0].value || 0).toLocaleString()}</p>
           </div>
         </div>
       );
@@ -134,10 +134,14 @@ const Analytics = () => {
     return null;
   };
 
-  // Data for the Donut Chart
+  // Safe Data Extraction for Pie Chart
+  const onlineRev = Number(data?.overview?.onlineRevenue || 0);
+  const offlineRev = Number(data?.overview?.offlineRevenue || 0);
+  const totalRevForPie = onlineRev + offlineRev;
+
   const pieData = [
-    { name: 'Online Sales', value: data.overview.onlineRevenue, color: '#2563EB' },
-    { name: 'Offline Sales', value: data.overview.offlineRevenue, color: '#EA580C' }
+    { name: 'Online Sales', value: onlineRev, color: '#2563EB' },
+    { name: 'Offline Sales', value: offlineRev, color: '#EA580C' }
   ];
 
   return (
@@ -194,13 +198,13 @@ const Analytics = () => {
               <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5 text-sabi-primary" />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${data.overview.revenueGrowth >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {data.overview.revenueGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {Math.abs(data.overview.revenueGrowth)}%
+              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${(data?.overview?.revenueGrowth || 0) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {(data?.overview?.revenueGrowth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(data?.overview?.revenueGrowth || 0)}%
               </div>
             </div>
             <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Revenue</p>
-            <h3 className="text-2xl font-black text-gray-900">₦{data.overview.totalRevenue.toLocaleString()}</h3>
+            <h3 className="text-2xl font-black text-gray-900">₦{Number(data?.overview?.totalRevenue || 0).toLocaleString()}</h3>
           </div>
 
           {/* Orders */}
@@ -209,13 +213,13 @@ const Analytics = () => {
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                 <ShoppingCart className="w-5 h-5 text-blue-600" />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${data.overview.ordersGrowth >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {data.overview.ordersGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {Math.abs(data.overview.ordersGrowth)}%
+              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${(data?.overview?.ordersGrowth || 0) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {(data?.overview?.ordersGrowth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(data?.overview?.ordersGrowth || 0)}%
               </div>
             </div>
             <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Orders</p>
-            <h3 className="text-2xl font-black text-gray-900">{data.overview.totalOrders.toLocaleString()}</h3>
+            <h3 className="text-2xl font-black text-gray-900">{Number(data?.overview?.totalOrders || 0).toLocaleString()}</h3>
           </div>
 
           {/* Store Visits (Growth Only) */}
@@ -230,13 +234,13 @@ const Analytics = () => {
               <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-orange-600" />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${data.overview.visitsGrowth >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {data.overview.visitsGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {Math.abs(data.overview.visitsGrowth)}%
+              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${(data?.overview?.visitsGrowth || 0) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {(data?.overview?.visitsGrowth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(data?.overview?.visitsGrowth || 0)}%
               </div>
             </div>
             <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Store Visits</p>
-            <h3 className="text-2xl font-black text-gray-900">{data.overview.storeVisits.toLocaleString()}</h3>
+            <h3 className="text-2xl font-black text-gray-900">{Number(data?.overview?.storeVisits || 0).toLocaleString()}</h3>
           </div>
 
           {/* Conversion Rate (Growth Only) */}
@@ -251,13 +255,13 @@ const Analytics = () => {
               <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5 text-purple-600" />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${data.overview.conversionGrowth >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {data.overview.conversionGrowth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {Math.abs(data.overview.conversionGrowth)}%
+              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${(data?.overview?.conversionGrowth || 0) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {(data?.overview?.conversionGrowth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(data?.overview?.conversionGrowth || 0)}%
               </div>
             </div>
             <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Conversion Rate</p>
-            <h3 className="text-2xl font-black text-gray-900">{data.overview.conversionRate}%</h3>
+            <h3 className="text-2xl font-black text-gray-900">{data?.overview?.conversionRate || 0}%</h3>
           </div>
         </div>
 
@@ -268,7 +272,7 @@ const Analytics = () => {
             <h3 className="text-lg font-extrabold text-gray-900 mb-4">Revenue Trend</h3>
             <div className="w-full mt-auto min-w-0">
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.salesTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={data?.salesTrend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                   <XAxis 
                     dataKey="label" 
@@ -333,8 +337,8 @@ const Analytics = () => {
                       <span className="text-sm font-bold text-gray-700">Online</span>
                     </div>
                     <span className="text-sm font-black text-gray-900">
-                      {data.overview.totalRevenue > 0 
-                        ? Math.round((data.overview.onlineRevenue / data.overview.totalRevenue) * 100) 
+                      {totalRevForPie > 0 
+                        ? Math.round((onlineRev / totalRevForPie) * 100) 
                         : 0}%
                     </span>
                   </div>
@@ -347,8 +351,8 @@ const Analytics = () => {
                       <span className="text-sm font-bold text-gray-700">Offline</span>
                     </div>
                     <span className="text-sm font-black text-gray-900">
-                      {data.overview.totalRevenue > 0 
-                        ? Math.round((data.overview.offlineRevenue / data.overview.totalRevenue) * 100) 
+                      {totalRevForPie > 0 
+                        ? Math.round((offlineRev / totalRevForPie) * 100) 
                         : 0}%
                     </span>
                   </div>
@@ -381,7 +385,7 @@ const Analytics = () => {
             </Link>
           </div>
           
-          {data.topProducts.length === 0 ? (
+          {(!data?.topProducts || data.topProducts.length === 0) ? (
             <div className="p-10 text-center text-gray-500 font-medium text-sm border-t border-gray-100">
                No product sales recorded yet.
             </div>
@@ -405,23 +409,23 @@ const Analytics = () => {
                             <Package className="w-5 h-5 text-gray-400" />
                           </div>
                           <div>
-                            <h4 className="text-sm font-bold text-gray-900">{product.name}</h4>
-                            <p className="text-[10px] font-medium text-gray-500">{product.category}</p>
+                            <h4 className="text-sm font-bold text-gray-900">{product.name || "Unknown Product"}</h4>
+                            <p className="text-[10px] font-medium text-gray-500">{product.category || "Uncategorized"}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-4 text-center text-sm font-bold text-gray-600">
-                        {product.sold}
+                        {product.sold || 0}
                       </td>
                       <td className="p-4 text-right text-sm font-black text-[#044e3b]">
-                        ₦{product.revenue.toLocaleString()}
+                        ₦{Number(product.revenue || 0).toLocaleString()}
                       </td>
                       <td className="p-4 pr-6 text-center">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
-                          product.stock === 0 ? "bg-red-50 text-red-700" : 
-                          product.stock <= 5 ? "bg-orange-50 text-orange-700" : "bg-emerald-50 text-emerald-700"
+                          (product.stock || 0) === 0 ? "bg-red-50 text-red-700" : 
+                          (product.stock || 0) <= 5 ? "bg-orange-50 text-orange-700" : "bg-emerald-50 text-emerald-700"
                         }`}>
-                          {product.stock === 0 ? 'Out of Stock' : `${product.stock} in stock`}
+                          {(product.stock || 0) === 0 ? 'Out of Stock' : `${product.stock} in stock`}
                         </span>
                       </td>
                     </tr>
@@ -432,7 +436,7 @@ const Analytics = () => {
           )}
           
           {/* Add prompt at bottom of table if they are Starter seeing limited list */}
-          {!isGrowth && data.topProducts.length > 0 && (
+          {!isGrowth && (data?.topProducts || []).length > 0 && (
             <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
               <p className="text-xs font-bold text-gray-500">
                 Showing top 2 products. <Link to="/dashboard/billing" className="text-purple-600 hover:underline">Upgrade to Growth</Link> to see full analytics list.

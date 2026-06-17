@@ -1,46 +1,118 @@
 const prisma = require('../config/db');
 
+// Helper function to safely calculate percentage growth
+const calculateGrowth = (current, previous) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100);
+};
+
 // @route   GET /api/analytics
-// @desc    Get dashboard analytics (Revenue, Trends, Top Products)
+// @desc    Get live dashboard analytics (Revenue, Trends, Top Products)
 exports.getAnalytics = async (req, res) => {
   try {
     const vendorId = req.vendor.id;
-    const { range } = req.query; // E.g., 'Last 7 Days', 'This Month'
+    const { range } = req.query; // 'Last 7 Days', 'Last 30 Days', 'This Month', 'Last Month', 'All Time'
 
-    // 1. Fetch all completed orders for this vendor
-    const orders = await prisma.order.findMany({
-      where: { 
-        vendorId, 
-        status: { notIn: ["CANCELLED", "Pending"] } // Only count valid sales
-      },
-      include: {
-        items: {
-          include: { product: true } // Include product to get current stock and category
+    // 1. Calculate Date Ranges (Current Period vs Previous Period)
+    const now = new Date();
+    let currentStart = new Date();
+    let currentEnd = new Date();
+    let prevStart = new Date();
+    let prevEnd = new Date();
+
+    // Standardize to end of day for precise calculations
+    currentEnd.setHours(23, 59, 59, 999);
+
+    if (range === 'This Month') {
+      currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else if (range === 'Last Month') {
+      currentStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      currentEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      prevEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
+    } else if (range === 'Last 30 Days') {
+      currentStart.setDate(now.getDate() - 29);
+      currentStart.setHours(0, 0, 0, 0);
+      prevStart = new Date(currentStart);
+      prevStart.setDate(prevStart.getDate() - 30);
+      prevEnd = new Date(currentStart);
+      prevEnd.setMilliseconds(-1);
+    } else if (range === 'All Time') {
+      currentStart = new Date(2000, 0, 1);
+      prevStart = new Date(2000, 0, 1);
+      prevEnd = new Date(2000, 0, 1);
+    } else {
+      // Default: Last 7 Days
+      currentStart.setDate(now.getDate() - 6);
+      currentStart.setHours(0, 0, 0, 0);
+      prevStart = new Date(currentStart);
+      prevStart.setDate(prevStart.getDate() - 7);
+      prevEnd = new Date(currentStart);
+      prevEnd.setMilliseconds(-1);
+    }
+
+    // 2. Fetch Orders for the Current and Previous Periods
+    // We use "not: Cancelled" so pending/pay-later orders are still counted in revenue
+    const [currentOrders, previousOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: { 
+          vendorId, 
+          status: { not: "Cancelled" },
+          createdAt: { gte: currentStart, lte: currentEnd } 
+        },
+        include: { items: { include: { product: true } } }
+      }),
+      prisma.order.findMany({
+        where: { 
+          vendorId, 
+          status: { not: "Cancelled" },
+          createdAt: { gte: prevStart, lte: prevEnd } 
         }
-      }
-    });
+      })
+    ]);
 
-    // 2. Calculate Overview Metrics
+    // 3. Calculate Current Overview Metrics
     let totalRevenue = 0;
     let onlineRevenue = 0;
     let offlineRevenue = 0;
 
-    orders.forEach(order => {
-      const amount = order.totalAmount || 0;
+    currentOrders.forEach(order => {
+      const amount = Number(order.totalAmount) || 0;
       totalRevenue += amount;
-      if (order.channel === 'ONLINE') onlineRevenue += amount;
-      if (order.channel === 'OFFLINE') offlineRevenue += amount;
+      // If channel is explicitly OFFLINE, add to offline. Otherwise, treat as ONLINE.
+      if (order.channel === 'OFFLINE') {
+        offlineRevenue += amount;
+      } else {
+        onlineRevenue += amount;
+      }
     });
 
-    // 3. Calculate Top Products Aggregation
+    const totalOrders = currentOrders.length;
+
+    // 4. Calculate Previous Overview Metrics for Growth
+    let prevRevenue = 0;
+    previousOrders.forEach(order => { prevRevenue += Number(order.totalAmount) || 0; });
+    const prevOrders = previousOrders.length;
+
+    // 5. Calculate Simulated Conversion Metrics based on live order volume
+    // (Until a page-view tracking database model is added)
+    const storeVisits = totalOrders > 0 ? Math.round(totalOrders * 4.2) : 0;
+    const prevStoreVisits = prevOrders > 0 ? Math.round(prevOrders * 4.2) : 0;
+    
+    const conversionRate = storeVisits > 0 ? parseFloat(((totalOrders / storeVisits) * 100).toFixed(1)) : 0;
+    const prevConversionRate = prevStoreVisits > 0 ? parseFloat(((prevOrders / prevStoreVisits) * 100).toFixed(1)) : 0;
+
+    // 6. Calculate Top Products Aggregation
     const productSalesMap = {};
     
-    orders.forEach(order => {
+    currentOrders.forEach(order => {
       order.items.forEach(item => {
         if (!productSalesMap[item.productId]) {
           productSalesMap[item.productId] = {
             id: item.productId,
-            name: item.name,
+            name: item.name || "Unknown Product",
             category: item.product?.category || "Uncategorized",
             sold: 0,
             revenue: 0,
@@ -48,43 +120,51 @@ exports.getAnalytics = async (req, res) => {
           };
         }
         productSalesMap[item.productId].sold += item.quantity;
-        // Fallback for price calculation
-        const itemPrice = item.priceAtPurchase || (order.totalAmount / item.quantity); 
+        const itemPrice = Number(item.priceAtPurchase) || (Number(order.totalAmount) / item.quantity); 
         productSalesMap[item.productId].revenue += (item.quantity * itemPrice);
       });
     });
 
-    // Convert map to array, sort by highest revenue, and take top 5
     const topProducts = Object.values(productSalesMap)
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+      .slice(0, 5); // Limit to top 5
 
-    // 4. Calculate Sales Trend (Last 7 Days)
+    // 7. Calculate Dynamic Sales Trend Chart
     const salesTrend = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const label = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g., "Mon"
-
-      // Sum orders that match this specific day
-      const daySales = orders
-        .filter(o => new Date(o.createdAt).toDateString() === d.toDateString())
-        .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-
-      salesTrend.push({ label, sales: daySales });
+    
+    // If "All Time", we won't show millions of daily bars, so we limit to 30 for safety
+    const daysToIterate = range === "All Time" ? 30 : Math.round((currentEnd - currentStart) / (1000 * 60 * 60 * 24));
+    
+    let loopDate = new Date(currentStart);
+    if (range === "All Time") {
+       loopDate = new Date(currentEnd);
+       loopDate.setDate(loopDate.getDate() - 29); // Show last 30 days of "All time"
     }
 
-    // 5. Send formatted data to frontend
+    while (loopDate <= currentEnd) {
+      const dateString = loopDate.toDateString();
+      const label = loopDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // e.g., "Jun 17"
+
+      // Sum orders that occurred on this specific day loop
+      const daySales = currentOrders
+        .filter(o => new Date(o.createdAt).toDateString() === dateString)
+        .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+
+      salesTrend.push({ label, sales: daySales });
+      loopDate.setDate(loopDate.getDate() + 1); // increment day
+    }
+
+    // 8. Send structured data to frontend
     res.status(200).json({
       overview: {
         totalRevenue,
-        revenueGrowth: 15.2, // Simulated growth metric (Needs historical comparison logic later)
-        totalOrders: orders.length,
-        ordersGrowth: 5.4,   // Simulated
-        storeVisits: 1240,   // Simulated (Needs a tracking pixel later)
-        visitsGrowth: -1.2,  // Simulated
-        conversionRate: 2.8, // Simulated
-        conversionGrowth: 0.5, // Simulated
+        revenueGrowth: calculateGrowth(totalRevenue, prevRevenue),
+        totalOrders,
+        ordersGrowth: calculateGrowth(totalOrders, prevOrders),
+        storeVisits,
+        visitsGrowth: calculateGrowth(storeVisits, prevStoreVisits),
+        conversionRate,
+        conversionGrowth: calculateGrowth(conversionRate, prevConversionRate),
         onlineRevenue,
         offlineRevenue,
       },
@@ -94,6 +174,6 @@ exports.getAnalytics = async (req, res) => {
 
   } catch (error) {
     console.error("Analytics Error:", error);
-    res.status(500).json({ message: "Server error generating analytics." });
+    res.status(500).json({ message: "Server error generating live analytics." });
   }
 };
