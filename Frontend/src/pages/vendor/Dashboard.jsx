@@ -30,13 +30,12 @@ const Dashboard = () => {
       setVendor(parsedVendor);
 
       // 2. State 1 Check: Have they NEVER set up a store?
-      // If storeLink is missing, they haven't completed onboarding.
       if (!parsedVendor.storeLink) {
         setIsLoading(false);
         return; 
       }
 
-      // 3. If they HAVE a store (even if offline), fetch stats
+      // 3. Fetch strictly online stats from our updated backend
       try {
         const response = await api.get('/vendors/dashboard');
         setDashboardData(response.data);
@@ -50,7 +49,6 @@ const Dashboard = () => {
     initializeDashboard();
   }, [navigate]);
 
-  // Loading Screen
   if (isLoading) {
     return <DashboardSkeleton />
   }
@@ -75,9 +73,6 @@ const Dashboard = () => {
         ? `/store/${vendor.storeLink}` 
         : `${window.location.protocol}//${vendor.storeLink}.${window.location.host.replace('www.', '')}`)
     : "#";
-
-  // --- STRICTLY FILTER OUT OFFLINE SALES FROM RECENT ORDERS ---
-  const onlineRecentOrders = dashboardData?.recentOrders?.filter(order => order.channel !== 'OFFLINE') || [];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative">
@@ -190,7 +185,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* 1. WELCOME BANNER (Dynamic styling based on online/offline) */}
+            {/* 1. WELCOME BANNER */}
             <div className={`rounded-4xl p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-lg transition-colors duration-500 ${vendor.isOnline ? 'bg-[#044e3b]' : 'bg-gray-800'}`}>
               
               {vendor.isOnline ? (
@@ -217,7 +212,7 @@ const Dashboard = () => {
                   <p className="text-white/80 text-sm lg:text-base font-medium">
                     {dashboardState === "no-products" 
                       ? <>Your store <strong>{vendor.storeName}</strong> is ready. Let's add products!</>
-                      : <>Here's what's happening with <strong>{vendor.storeName}</strong> today.</>}
+                      : <>Here's what's happening with your online store today.</>}
                   </p>
                 </div>
               </div>
@@ -255,13 +250,10 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 2. STAT CARDS (Works for both states, just shows 0 if no-products) */}
+            {/* 2. STAT CARDS */}
             <div>
               <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-lg font-extrabold text-gray-900">Overview</h3>
-                 <select className="bg-white border border-gray-200 text-gray-700 font-bold text-sm rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-sabi-primary/20">
-                    <option>All Time</option>
-                 </select>
+                 <h3 className="text-lg font-extrabold text-gray-900">Online Store Overview</h3>
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
@@ -269,7 +261,7 @@ const Dashboard = () => {
                   <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
                     <Store className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <p className="text-gray-600 text-xs sm:text-sm font-bold mb-1">Total Revenue</p>
+                  <p className="text-gray-600 text-xs sm:text-sm font-bold mb-1">Online Revenue</p>
                   <h3 className="text-2xl font-black text-gray-900 mb-1">₦{parseFloat(dashboardData?.stats?.totalRevenue || 0).toLocaleString()}</h3>
                 </div>
 
@@ -277,7 +269,7 @@ const Dashboard = () => {
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                     <ShoppingCart className="w-5 h-5 text-blue-600" />
                   </div>
-                  <p className="text-gray-600 text-xs sm:text-sm font-bold mb-1">Total Orders</p>
+                  <p className="text-gray-600 text-xs sm:text-sm font-bold mb-1">Online Orders</p>
                   <h3 className="text-2xl font-black text-gray-900 mb-1">{dashboardData?.stats?.totalOrders || 0}</h3>
                 </div>
 
@@ -332,7 +324,7 @@ const Dashboard = () => {
                   </Link>
                 </div>
 
-                {onlineRecentOrders.length === 0 ? (
+                {dashboardData?.recentOrders?.length === 0 ? (
                   <div className="text-center py-10 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm">
                       <ShoppingCart className="w-6 h-6 text-gray-300" />
@@ -342,7 +334,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scrollbar pr-2">
-                    {onlineRecentOrders.map((order, i) => {
+                    {dashboardData?.recentOrders?.map((order, i) => {
                       const customerName = order.customerName || order.customer?.fullName || "Guest";
                       const orderId = order.orderNumber || order.id || "N/A";
                       const amount = order.totalAmount || order.total || 0;

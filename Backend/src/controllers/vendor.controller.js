@@ -134,30 +134,59 @@ exports.completeOnboarding = async (req, res) => {
 
 
 // @route   GET /api/vendors/dashboard
+// @desc    Get dashboard stats (Strictly ONLINE metrics)
 exports.getDashboardStats = async (req, res) => {
   try {
     const vendorId = req.vendor.id;
 
-    const totalProducts = await prisma.product.count({ where: { vendorId } });
-    const totalOrders = await prisma.order.count({ where: { vendorId } });
+    // 1. Get total ACTIVE products
+    const totalProducts = await prisma.product.count({ 
+      where: { 
+        vendorId,
+        status: { not: "ARCHIVED" } 
+      } 
+    });
 
+    // 2. Get total ONLINE orders (Everything that is NOT an offline walk-in)
+    const totalOrders = await prisma.order.count({ 
+      where: { 
+        vendorId,
+        channel: { not: "OFFLINE" } 
+      } 
+    });
+
+    // 3. Calculate ONLINE Revenue 
+    // (Matches Orders.jsx logic: excludes Cancelled, ignores strict paymentStatus for Pay-on-Delivery)
     const revenueResult = await prisma.order.aggregate({
       _sum: { totalAmount: true },
-      where: { vendorId, paymentStatus: "PAID" },
+      where: { 
+        vendorId, 
+        channel: { not: "OFFLINE" }, // Safely excludes offline without breaking Prisma
+        status: { not: "Cancelled" } 
+      },
     });
+    
     const totalRevenue = revenueResult._sum.totalAmount || 0;
 
+    // 4. Get 5 most recent ONLINE orders
     const recentOrders = await prisma.order.findMany({
-      where: { vendorId },
+      where: { 
+        vendorId,
+        channel: { not: "OFFLINE" }
+      },
       orderBy: { createdAt: "desc" },
       take: 5,
-      include: { customer: { select: { fullName: true } } },
+      include: { 
+        customer: { select: { fullName: true } } 
+      },
     });
 
+    // 5. Send to frontend
     res.status(200).json({
       stats: { totalRevenue, totalOrders, totalProducts },
       recentOrders,
     });
+    
   } catch (error) {
     console.error("Dashboard Stats Error:", error);
     res.status(500).json({ message: "Server error while fetching dashboard stats." });
