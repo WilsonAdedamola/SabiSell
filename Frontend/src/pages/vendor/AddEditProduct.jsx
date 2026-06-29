@@ -7,6 +7,7 @@ import {
 import api from '../../utils/api';
 import { AddEditProductSkeleton } from '../../components/shared/Skeletons';
 import Toast from '../../components/shared/Toast'; 
+import { useAuth } from "../../context/AuthContext";
 
 const AddEditProduct = () => {
   const navigate = useNavigate();
@@ -15,18 +16,19 @@ const AddEditProduct = () => {
   
   const fileInputRef = useRef(null);
   
+  // 1. Secure Global State
+  const { vendor, isLoading: isAuthLoading } = useAuth();
+  
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true); 
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // PLAN & LIMIT LOGIC
-  const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-  const currentPlan = vendor.plan || "FREE";
+  // PLAN & LIMIT LOGIC (derived from AuthContext)
+  const currentPlan = vendor?.plan || "FREE";
   
   const maxImages = currentPlan === "GROWTH" ? 7 : currentPlan === "STARTER" ? 5 : 2;
-  
   const canUseDrafts = currentPlan === "STARTER" || currentPlan === "GROWTH";
 
   // Form State
@@ -49,6 +51,15 @@ const AddEditProduct = () => {
 
   // FETCH DATA
   useEffect(() => {
+    // Wait until auth is confirmed
+    if (isAuthLoading) return;
+    
+    // Redirect if no session
+    if (!vendor) {
+      navigate('/login');
+      return;
+    }
+
     const fetchData = async () => {
       try {
         // 1. Fetch Categories first
@@ -91,7 +102,7 @@ const AddEditProduct = () => {
     };
 
     fetchData();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, isAuthLoading, vendor, navigate]);
 
   // HANDLERS
   const handleChange = (e) => {
@@ -204,9 +215,11 @@ const AddEditProduct = () => {
     }
   };
 
-  if (isFetching) {
+  if (isAuthLoading || isFetching) {
     return <AddEditProductSkeleton />
   }
+
+  if (!vendor) return null;
 
   return (
     <div className="flex-1 overflow-y-auto h-full p-4 sm:p-6 lg:p-8 pb-32 lg:pb-20 w-full bg-sabi-surface relative">

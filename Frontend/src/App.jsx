@@ -1,4 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute"; // <-- NEW: Adjust path if needed
 
 // 1. LAYOUTS
 import VendorLayout from "./layouts/VendorLayout";
@@ -75,24 +77,30 @@ const mainRouter = createBrowserRouter([
   // VENDOR APP
   {
     path: "/dashboard",
-    element: <VendorLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: "onboarding", element: <Onboarding /> },
-      { path: "products", element: <Products /> },
-      { path: "products/new", element: <AddEditProduct /> },
-      { path: "products/edit/:id", element: <AddEditProduct /> },
-      { path: "orders", element: <Orders /> },
-      { path: "orders/:id", element: <OrderDetails /> },
-      { path: "analytics", element: <Analytics /> },
-      { path: "messages", element: <Inbox /> },
-      { path: "messages/:id", element: <ChatScreen /> },
-      { path: "settings", element: <Settings /> },
-      { path: "billing", element: <Billing /> },
-      { path: "discounts", element: <Discounts /> },
-      { path: "sales", element: <Sales /> },
-      { path: "store-link", element: <StoreLink /> },
-      { path: "payments", element: <Payments /> },
+      {
+        path: "",
+        element: <VendorLayout />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: "onboarding", element: <Onboarding /> },
+          { path: "products", element: <Products /> },
+          { path: "products/new", element: <AddEditProduct /> },
+          { path: "products/edit/:id", element: <AddEditProduct /> },
+          { path: "orders", element: <Orders /> },
+          { path: "orders/:id", element: <OrderDetails /> },
+          { path: "analytics", element: <Analytics /> },
+          { path: "messages", element: <Inbox /> },
+          { path: "messages/:id", element: <ChatScreen /> },
+          { path: "settings", element: <Settings /> },
+          { path: "billing", element: <Billing /> },
+          { path: "discounts", element: <Discounts /> },
+          { path: "sales", element: <Sales /> },
+          { path: "store-link", element: <StoreLink /> },
+          { path: "payments", element: <Payments /> },
+        ],
+      }
     ],
   },
 
@@ -139,7 +147,11 @@ const App = () => {
   ];
   const isSubdomain = !mainDomains.includes(hostname);
 
-  return <RouterProvider router={isSubdomain ? storeRouter : mainRouter} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={isSubdomain ? storeRouter : mainRouter} />
+    </AuthProvider>
+  );
 };
 
 export default App;

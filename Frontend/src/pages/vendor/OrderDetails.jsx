@@ -5,20 +5,18 @@ import {
   MessageCircle, Printer, CreditCard, Calendar, Truck,
   Loader2, AlertCircle
 } from "lucide-react";
-import api from '../../utils/api'; // Ready for backend integration
+import api from '../../utils/api';
 import {OrderDetailsSkeleton} from '../../components/shared/Skeletons';
 
 const OrderDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // --- STATE MANAGEMENT ---
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // --- FETCH ORDER DATA ---
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {

@@ -29,7 +29,7 @@ const NotificationModal = ({ isOpen, onClose, notifications, markAsRead, markAll
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end">
+    <div className="fixed inset-0 z-100 flex justify-end">
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
 
       <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col relative z-10 animate-in slide-in-from-right duration-300">

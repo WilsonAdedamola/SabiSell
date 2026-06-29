@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 
 // Load environment variables
@@ -8,8 +9,13 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors()); 
+// app.use(cors()); 
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://sabisell.onrender.com', 'https://sabisell.onrender.com/api', 'http://localhost:5000', 'http://localhost:5000/api', 'https://sabisell.vercel.app'],
+  credentials: true,
+}));
 app.use(express.json()); 
+app.use(cookieParser());
 
 // Import Routes
 const authRoutes = require('./routes/auth.routes');
