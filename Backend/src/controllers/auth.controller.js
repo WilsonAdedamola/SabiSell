@@ -1,103 +1,91 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const prisma = require('../config/db');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const prisma = require("../config/db");
+
+// Helper to set HttpOnly Cookie
+const setTokenCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true, //
+    secure: process.env.NODE_ENV === "production", // Requires HTTPS in production
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-origin handling
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  });
+};
 
 // @route   POST /api/auth/signup
-// @desc    Register a new vendor
 exports.signup = async (req, res) => {
   try {
     let { fullName, email, phone, password } = req.body;
-
     email = email.toLowerCase().trim();
 
-    // 1. Check if the vendor already exists
-    const existingVendor = await prisma.vendor.findUnique({
-      where: { email }
-    });
-
+    const existingVendor = await prisma.vendor.findUnique({ where: { email } });
     if (existingVendor) {
-      return res.status(400).json({ message: "A vendor with this email already exists." });
+      return res
+        .status(400)
+        .json({ message: "A vendor with this email already exists." });
     }
 
-    // 2. Hash the password for security
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // 3. Create the vendor in the database (Default plan is FREE)
     const newVendor = await prisma.vendor.create({
-      data: {
-        fullName,
-        email,
-        phone,
-        passwordHash,
-        plan: "FREE" // Everyone starts on the free plan
-      }
+      data: { fullName, email, phone, passwordHash, plan: "FREE" },
     });
 
-    // 4. Generate a secure token so they stay logged in
     const token = jwt.sign(
-      { vendorId: newVendor.id }, 
-      process.env.JWT_SECRET || 'super_secret_fallback_key', 
-      { expiresIn: '7d' }
+      { vendorId: newVendor.id },
+      process.env.JWT_SECRET || "super_secret_fallback_key",
+      { expiresIn: "7d" },
     );
 
-    // --- NEW: Brand new users are never onboarded yet ---
-    const isOnboarded = false;
+    // Attach token to cookie instead of JSON
+    setTokenCookie(res, token);
 
-    // 5. Send success response (excluding the password)
     res.status(201).json({
       message: "Account created successfully!",
-      token,
       vendor: {
         id: newVendor.id,
         fullName: newVendor.fullName,
         email: newVendor.email,
-        plan: newVendor.plan
+        plan: newVendor.plan,
       },
-      isOnboarded // <-- Added flag here
+      isOnboarded: false,
     });
-
   } catch (error) {
     console.error("Signup Error:", error);
-    res.status(500).json({ message: "Server error during signup. Please try again." });
+    res
+      .status(500)
+      .json({ message: "Server error during signup. Please try again." });
   }
 };
 
-
 // @route   POST /api/auth/login
-// @desc    Authenticate vendor & get token
 exports.login = async (req, res) => {
   try {
     let { email, password } = req.body;
-
     email = email.toLowerCase().trim();
 
-    // 1. Check if the vendor exists
     const vendor = await prisma.vendor.findUnique({ where: { email } });
-    if (!vendor) {
+    if (!vendor)
       return res.status(400).json({ message: "Invalid email or password." });
-    }
 
-    // 2. Check if the password matches the hashed password in the database
     const isMatch = await bcrypt.compare(password, vendor.passwordHash);
-    if (!isMatch) {
+    if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password." });
-    }
 
-    // 3. Generate a new secure token
     const token = jwt.sign(
-      { vendorId: vendor.id }, 
-      process.env.JWT_SECRET || 'super_secret_fallback_key', 
-      { expiresIn: '7d' }
+      { vendorId: vendor.id },
+      process.env.JWT_SECRET || "super_secret_fallback_key",
+      { expiresIn: "7d" },
     );
 
-    // --- NEW: Check if the user has completed onboarding by looking for a storeLink ---
+    // Attach token to cookie instead of JSON
+    setTokenCookie(res, token);
+
     const isOnboarded = vendor.storeLink !== null && vendor.storeLink !== "";
 
-    // 4. Send success response
     res.status(200).json({
       message: "Logged in successfully!",
-      token,
       vendor: {
         id: vendor.id,
         fullName: vendor.fullName,
@@ -107,13 +95,55 @@ exports.login = async (req, res) => {
         storeLink: vendor.storeLink,
         logoUrl: vendor.logoUrl,
         plan: vendor.plan,
-        isOnline: vendor.isOnline
+        isOnline: vendor.isOnline,
       },
-      isOnboarded // <-- Added flag here
+      isOnboarded,
     });
-
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error during login. Please try again." });
+    res
+      .status(500)
+      .json({ message: "Server error during login. Please try again." });
+  }
+};
+
+// @route   POST /api/auth/logout
+// @desc    Clear the HttpOnly cookie
+exports.logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+// @route   GET /api/auth/me
+// @desc    Get current logged in vendor
+exports.getMe = async (req, res) => {
+  try {
+    // Safety check to ensure the middleware passed the ID correctly
+    if (!req.vendor || !req.vendor.id) {
+      return res.status(401).json({ message: "Invalid token payload." });
+    }
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: req.vendor.id },
+    });
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const { passwordHash, ...safeVendor } = vendor;
+
+    const isOnboarded = vendor.storeLink !== null && vendor.storeLink !== "";
+
+    res.status(200).json({
+      vendor: safeVendor,
+      isOnboarded,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error checking auth status." });
   }
 };

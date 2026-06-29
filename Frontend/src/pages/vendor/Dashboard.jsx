@@ -7,55 +7,58 @@ import {
 } from "lucide-react";
 import api from '../../utils/api';
 import { DashboardSkeleton } from "../../components/shared/Skeletons";
+import { useAuth } from "../../context/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   
-  // Real Dynamic State
-  const [vendor, setVendor] = useState(null);
+  // 1. Secure Global State
+  const { vendor, isLoading: isAuthLoading } = useAuth();
+  
+  // 2. Local Data State
   const [dashboardData, setDashboardData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    const initializeDashboard = async () => {
-      // 1. Grab the user data
-      const savedVendor = localStorage.getItem('sabisell_vendor');
-      
-      if (!savedVendor) {
-        navigate('/login');
-        return;
-      }
+    // Wait for the AuthContext to finish checking the secure cookie
+    if (isAuthLoading) return;
 
-      const parsedVendor = JSON.parse(savedVendor);
-      setVendor(parsedVendor);
+    // If no secure session exists, redirect to login
+    if (!vendor) {
+      navigate('/login');
+      return;
+    }
 
-      // 2. State 1 Check: Have they NEVER set up a store?
-      if (!parsedVendor.storeLink) {
-        setIsLoading(false);
-        return; 
-      }
+    // State 1 Check: Have they NEVER set up a store?
+    if (!vendor.storeLink) {
+      setIsDataLoading(false);
+      return; 
+    }
 
-      // 3. Fetch strictly online stats from our updated backend
+    // Fetch strictly online stats from our updated backend
+    const fetchDashboardStats = async () => {
       try {
         const response = await api.get('/vendors/dashboard');
         setDashboardData(response.data);
       } catch (error) {
         console.error("Failed to load dashboard stats", error);
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     };
 
-    initializeDashboard();
-  }, [navigate]);
+    fetchDashboardStats();
+  }, [vendor, isAuthLoading, navigate]);
 
-  if (isLoading) {
+  // Handle Loading Screens dynamically
+  if (isAuthLoading || (vendor?.storeLink && isDataLoading)) {
     return <DashboardSkeleton />
   }
 
+  // Prevent flicker right before unauthenticated redirect
   if (!vendor) return null;
 
-  // --- DETERMINE DASHBOARD STATE ---
+  // DETERMINE DASHBOARD STATE
   let dashboardState = "not-started";
   
   if (vendor.storeLink) {
@@ -66,7 +69,7 @@ const Dashboard = () => {
     }
   }
 
-  // --- DYNAMIC STORE URL LOGIC ---
+  // DYNAMIC STORE URL LOGIC
   const isFreeHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost');
   const storeUrl = vendor?.storeLink 
     ? (isFreeHost 
@@ -74,13 +77,16 @@ const Dashboard = () => {
         : `${window.location.protocol}//${vendor.storeLink}.${window.location.host.replace('www.', '')}`)
     : "#";
 
+  // STRICTLY FILTER OUT OFFLINE SALES FROM RECENT ORDERS
+  const onlineRecentOrders = dashboardData?.recentOrders?.filter(order => order.channel !== 'OFFLINE') || [];
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full relative">
       <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500 mt-4 sm:mt-0">
         
-        {/* ======================================================== */}
+    
         {/* STATE 1: BEFORE ANY SETUP (Not Started / No StoreLink)   */}
-        {/* ======================================================== */}
+    
         {dashboardState === "not-started" && (
           <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center pt-8 sm:pt-16 pb-10">
              
@@ -159,9 +165,9 @@ const Dashboard = () => {
         )}
 
        
-        {/* ======================================================== */}
+    
         {/* SHARED LOGIC FOR DASHBOARDS (STATES 2 & 3)               */}
-        {/* ======================================================== */}
+    
         {(dashboardState === "no-products" || dashboardState === "active") && (
           <div className="space-y-6 w-full">
             
@@ -211,7 +217,7 @@ const Dashboard = () => {
                   </h1>
                   <p className="text-white/80 text-sm lg:text-base font-medium">
                     {dashboardState === "no-products" 
-                      ? <>Your store <strong>{vendor.storeName}</strong> is ready. Let's add products!</>
+                      ? <>Your store <strong>{vendor.storeName}</strong> is ready. Let's add products</>
                       : <>Here's what's happening with your online store today.</>}
                   </p>
                 </div>
@@ -292,9 +298,9 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* ======================================================== */}
+        
             {/* SUB-STATE: NO PRODUCTS CALL TO ACTION                      */}
-            {/* ======================================================== */}
+        
             {dashboardState === "no-products" && (
               <div className="bg-white rounded-4xl p-8 sm:p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center mt-6">
                  <div className="relative w-32 h-32 mb-6">
@@ -312,9 +318,9 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* ======================================================== */}
+        
             {/* SUB-STATE: ACTIVE RECENT ORDERS                          */}
-            {/* ======================================================== */}
+        
             {dashboardState === "active" && (
               <div className="bg-white rounded-4xl p-6 lg:p-8 border border-gray-100 shadow-sm flex flex-col mt-6">
                 <div className="flex justify-between items-center mb-6">
@@ -324,7 +330,7 @@ const Dashboard = () => {
                   </Link>
                 </div>
 
-                {dashboardData?.recentOrders?.length === 0 ? (
+                {onlineRecentOrders.length === 0 ? (
                   <div className="text-center py-10 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm">
                       <ShoppingCart className="w-6 h-6 text-gray-300" />
@@ -334,7 +340,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scrollbar pr-2">
-                    {dashboardData?.recentOrders?.map((order, i) => {
+                    {onlineRecentOrders.map((order, i) => {
                       const customerName = order.customerName || order.customer?.fullName || "Guest";
                       const orderId = order.orderNumber || order.id || "N/A";
                       const amount = order.totalAmount || order.total || 0;

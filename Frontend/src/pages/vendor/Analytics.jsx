@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   TrendingUp, Users, ShoppingCart, Package, Lock, Star, 
-  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, Loader2, CheckCircle2
+  ChevronDown, Calendar, ArrowUpRight, ArrowDownRight, Globe, Store, Filter, CheckCircle2
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
@@ -10,26 +10,45 @@ import {
 } from 'recharts';
 import api from '../../utils/api';
 import { DashboardSkeleton } from "../../components/shared/Skeletons";
-import Toast from "../../components/shared/Toast";
+import { useAuth } from "../../context/AuthContext";
 
 const Analytics = () => {
+  const navigate = useNavigate();
+  const scrollContainerRef = useRef(null); // Ref to control scrolling
+  
+  // 1. Secure Global State
+  const { vendor, isLoading: isAuthLoading } = useAuth();
+
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState("Last 7 Days");
   const [error, setError] = useState(null);
   
-  // Real Data State
   const [data, setData] = useState(null);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
   // Vendor Plan Logic
-  const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-  const currentPlan = vendor.plan?.toUpperCase() || "FREE";
+  const currentPlan = vendor?.plan?.toUpperCase() || "FREE";
   
   const isFree = currentPlan === "FREE";
   const isStarter = currentPlan === "STARTER";
   const isGrowth = currentPlan === "GROWTH";
 
   useEffect(() => {
-    // If they are on Free, don't bother fetching data
+    // Wait for the AuthContext to finish checking the secure cookie
+    if (isAuthLoading) return;
+
+    if (!vendor) {
+      navigate('/login');
+      return;
+    }
+
+    // If they are on Free, don't fetch data
     if (isFree) {
       setIsLoading(false);
       return;
@@ -53,14 +72,17 @@ const Analytics = () => {
     };
 
     fetchAnalytics();
-  }, [isFree, dateRange]); // Re-fetches live whenever dateRange dropdown changes!
+  }, [isFree, dateRange, isAuthLoading, vendor, navigate]); // Re-fetches live whenever dateRange changes!
 
-  if (isLoading) return <DashboardSkeleton />;
+  if (isAuthLoading || isLoading) return <DashboardSkeleton />;
 
-  // --- STATE 1: FREE PLAN (LOCKED) ---
+  // Prevent flicker right before unauthenticated redirect
+  if (!vendor) return null;
+
+  // STATE 1: FREE PLAN (LOCKED)
   if (isFree) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative flex items-center justify-center">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-8 sm:p-10 text-center border border-gray-100 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
           
@@ -95,7 +117,7 @@ const Analytics = () => {
 
   if (error || !data) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 font-bold mb-4">{error || "Something went wrong."}</p>
           <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-900 text-white rounded-xl">Retry</button>
@@ -104,7 +126,7 @@ const Analytics = () => {
     );
   }
 
-  // --- RECHARTS CUSTOM TOOLTIPS ---
+  // RECHARTS CUSTOM TOOLTIPS
   const CustomBarTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -145,7 +167,7 @@ const Analytics = () => {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* HEADER */}
@@ -268,7 +290,7 @@ const Analytics = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           
           {/* RECHARTS: SALES TREND BAR CHART */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2 flex flex-col min-h-[400px]">
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2 flex flex-col min-h-100">
             <h3 className="text-lg font-extrabold text-gray-900 mb-4">Revenue Trend</h3>
             <div className="w-full mt-auto min-w-0">
               <ResponsiveContainer width="100%" height={300}>
@@ -300,7 +322,7 @@ const Analytics = () => {
           </div>
 
           {/* RECHARTS: CHANNEL BREAKDOWN DONUT CHART */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm flex flex-col relative overflow-hidden min-h-[400px]">
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm flex flex-col relative overflow-hidden min-h-100">
             <h3 className="text-lg font-extrabold text-gray-900 mb-2">Sales by Channel</h3>
             
             {isGrowth ? (

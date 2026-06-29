@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, Filter, Lock, Store, Globe, 
@@ -9,8 +9,15 @@ import {
 import api from '../../utils/api';
 import Toast from "../../components/shared/Toast";
 import { DashboardSkeleton } from "../../components/shared/Skeletons";
+import { useAuth } from "../../context/AuthContext"; 
 
 const Sales = () => {
+  const navigate = useNavigate();
+  const scrollContainerRef = useRef(null);
+  
+  // 1. Secure Global State
+  const { vendor, isLoading: isAuthLoading } = useAuth();
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -24,9 +31,15 @@ const Sales = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
   // Vendor Plan Logic
-  const vendor = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-  const currentPlan = vendor.plan || "FREE";
+  const currentPlan = vendor?.plan || "FREE";
   const canRecordOffline = currentPlan === "STARTER" || currentPlan === "GROWTH";
 
   // Offline Sale Form State
@@ -38,14 +51,9 @@ const Sales = () => {
     amountPaid: "",
   });
 
-  useEffect(() => {
-    fetchSalesAndProducts();
-  }, []);
-
   const fetchSalesAndProducts = async () => {
     setIsLoading(true);
     try {
-      // Fetch data from the backend
       const [salesRes, productsRes] = await Promise.all([
         api.get('/orders'),
         api.get('/products')
@@ -59,6 +67,19 @@ const Sales = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Wait for AuthContext to finish checking secure cookie
+    if (isAuthLoading) return;
+    
+    // Redirect if not logged in
+    if (!vendor) {
+      navigate('/login');
+      return;
+    }
+
+    fetchSalesAndProducts();
+  }, [isAuthLoading, vendor, navigate]);
 
   // Handlers
   const handleOfflineFormChange = (e) => {
@@ -98,7 +119,6 @@ const Sales = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Send data to the backend endpoint
       await api.post('/orders/offline', offlineForm);
       
       // 2. Refresh the data from the database to update tables and revenue cards
@@ -129,10 +149,13 @@ const Sales = () => {
   const onlineRevenue = sales.filter(s => s.channel === "ONLINE").reduce((sum, s) => sum + (parseFloat(s.total || s.totalAmount) || 0), 0);
   const offlineRevenue = sales.filter(s => s.channel === "OFFLINE").reduce((sum, s) => sum + (parseFloat(s.total || s.totalAmount) || 0), 0);
 
-  if (isLoading) return <DashboardSkeleton />;
+  if (isAuthLoading || isLoading) return <DashboardSkeleton />;
+  
+  // Prevent flicker right before unauthenticated redirect
+  if (!vendor) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50/50 pb-24 relative">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="max-w-6xl mx-auto space-y-6">
@@ -283,7 +306,7 @@ const Sales = () => {
                 ))}
               </div>
 
-              {/* 💻 DESKTOP VIEW: Traditional Table */}
+              {/* DESKTOP VIEW: Traditional Table */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
@@ -331,7 +354,7 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* RECORD OFFLINE SALE MODAL                                */}
+      {/* RECORD OFFLINE SALE MODAL */}
       <AnimatePresence>
         {isRecordModalOpen && (
           <motion.div 

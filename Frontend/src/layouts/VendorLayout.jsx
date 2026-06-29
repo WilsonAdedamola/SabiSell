@@ -1,113 +1,612 @@
+// import { useState, useEffect } from "react";
+// import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+// import {
+//   LayoutDashboard, Store, Package, ClipboardList, Users,
+//   BarChart2, Tag, QrCode, CreditCard, Settings, HelpCircle,
+//   Search, Bell, ExternalLink, Menu, X, Plus,
+//   ChevronRight, Rocket, MessageCircle,
+//   CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut, PiggyBank, Brackets
+// } from "lucide-react";
+// import Logo from "../components/shared/Logo";
+// import ConfirmModal from "../components/shared/ConfirmModal";
+// import NotificationModal from "../pages/vendor/NotificationModal";
+// import api from "../utils/api";
+
+// const VendorLayout = () => {
+//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+//   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+
+//   // MODAL & NOTIFICATION STATES
+//   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+//   const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+//   // REAL NOTIFICATION STATE
+//   const [notifications, setNotifications] = useState([]);
+//   const unreadNotifsCount = notifications.filter(n => !n.isRead).length;
+
+//   const location = useLocation();
+//   const navigate = useNavigate();
+
+//   const [vendorData, setVendorData] = useState({
+//     name: "Vendor",
+//     storeName: null,
+//     storeType: null,
+//     logoUrl: null,
+//     isOnline: false,
+//     storeLink: null
+//   });
+
+//   const [stats, setStats] = useState({
+//     products: 0,
+//     orders: 0
+//   });
+
+//   useEffect(() => {
+//     const token = localStorage.getItem('sabisell_token');
+//     const storedData = localStorage.getItem('sabisell_vendor');
+
+//     if (!token || !storedData) {
+//       navigate('/login', { replace: true });
+//       return;
+//     }
+
+//     const parsedVendor = JSON.parse(storedData);
+//     if (!parsedVendor.storeLink || parsedVendor.storeLink === "") {
+//       navigate('/dashboard/onboarding', { replace: true });
+//     }
+//   }, [navigate, location.pathname]);
+
+//   useEffect(() => {
+//     const fetchVendorData = () => {
+//       const storedData = localStorage.getItem('sabisell_vendor');
+//       if (storedData) {
+//         setVendorData(JSON.parse(storedData));
+//       }
+//     };
+
+//     fetchVendorData();
+//     window.addEventListener('storage', fetchVendorData);
+//     return () => window.removeEventListener('storage', fetchVendorData);
+//   }, []);
+
+//   // FETCH STATS & NOTIFICATIONS
+//   useEffect(() => {
+//     const fetchSidebarData = async () => {
+//       try {
+//         const [prodRes, ordRes, notifRes] = await Promise.all([
+//           api.get('/products').catch(() => ({ data: { products: [] } })),
+//           api.get('/orders').catch(() => ({ data: { orders: [] } })),
+//           api.get('/notifications').catch(() => ({ data: { notifications: [] } }))
+//         ]);
+
+//         const activeOrders = ordRes.data.orders?.filter(
+//           order => order.status === 'Pending' || order.status === 'Processing'
+//         ) || [];
+
+//         setStats({
+//           products: prodRes.data.products?.length || 0,
+//           orders: activeOrders.length
+//         });
+
+//         // Set Notifications
+//         if (notifRes.data.notifications) {
+//           setNotifications(notifRes.data.notifications);
+//         }
+
+//       } catch (error) {
+//         console.error("Failed to load sidebar data:", error);
+//       }
+//     };
+
+//     if (localStorage.getItem('sabisell_token') && vendorData.storeLink) {
+//       fetchSidebarData();
+//     }
+//   }, [location.pathname, vendorData.storeLink]);
+
+//   // NOTIFICATION ACTIONS
+//   const markAsRead = async (id) => {
+//     try {
+//       await api.put(`/notifications/${id}/read`); // Update DB
+//       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+//     } catch (err) {
+//       console.error("Failed to mark as read", err);
+//     }
+//   };
+
+//   const markAllAsRead = async () => {
+//     try {
+//       await api.put(`/notifications/read-all`); // Update DB
+//       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+//     } catch (err) {
+//       console.error("Failed to mark all as read", err);
+//     }
+//   };
+
+//   // UI STATE FLAGS
+//   const isStoreCreated = Boolean(vendorData?.storeLink);
+//   const hasStore = vendorData.isOnline && vendorData.storeName;
+//   const displayName = hasStore ? vendorData.storeName : vendorData.name;
+//   const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
+
+//   const isFreeHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost');
+
+//   const storeUrl = vendorData?.storeLink
+//     ? (isFreeHost
+//         ? `/store/${vendorData.storeLink}`
+//         : `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}`)
+//     : "/dashboard/settings";
+
+//   const handleLogoutClick = () => {
+//     setIsMobileMenuOpen(false);
+//     setIsLogoutModalOpen(true);
+//   };
+
+//   const confirmLogout = () => {
+//     localStorage.removeItem('sabisell_token');
+//     localStorage.removeItem('sabisell_vendor');
+//     navigate('/login', { replace: true });
+//   };
+
+//   useEffect(() => {
+//     const syncTabs = (event) => {
+//       if (event.key === 'sabisell_token') {
+//         if (!event.newValue || event.newValue !== event.oldValue) {
+//           navigate('/login', { replace: true });
+//         }
+//       }
+//     };
+//     window.addEventListener('storage', syncTabs);
+//     return () => window.removeEventListener('storage', syncTabs);
+//   }, [navigate]);
+
+//   const navigation = [
+//     { section: "STORE", items: [
+//       { name: "My Store", icon: Store, path: storeUrl, external: !!vendorData?.storeLink },
+//       { name: "Products", icon: Package, path: "/dashboard/products", badge: stats.products > 0 ? stats.products.toString() : null },
+//       { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: stats.orders > 0 ? stats.orders.toString() : null, badgeColor: "bg-emerald-100 text-emerald-800" },
+//       { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
+//       { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
+//     ]},
+//     { section: "SALES & MARKETING", items: [
+//       { name: "Sales", icon: Brackets, path: "/dashboard/sales" },
+//       { name: "Discounts & Coupons", icon: Tag, path: "/dashboard/discounts" },
+//       { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/store-link" },
+//     ]},
+//     { section: "SETTINGS", items: [
+//       { name: "Billing", icon: CreditCardIcon, path: "/dashboard/billing" },
+//       { name: "Payments", icon: PiggyBank, path: "/dashboard/payments" },
+//       { name: "Store Settings", icon: Settings, path: "/dashboard/settings" },
+//     ]}
+//   ];
+
+//   const bottomNav = [
+//     { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+//     { name: "Products", icon: Package, path: "/dashboard/products" },
+//     { name: "Customers", icon: Users, path: "/dashboard/customers" },
+//     { name: "Orders", icon: ClipboardList, path: "/dashboard/orders" },
+//     { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
+//   ];
+
+//   const DynamicAvatar = ({ size = "w-10 h-10" }) => (
+//     <div className={`${size} rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}>
+//       {hasStore && vendorData.logoUrl && vendorData.logoUrl !== "null" ? (
+//         <img src={vendorData.logoUrl} alt={displayName} className="w-full h-full object-cover" />
+//       ) : hasStore ? (
+//         <span className="font-extrabold text-sabi-primary text-sm">
+//           {vendorData.storeName.substring(0, 2).toUpperCase()}
+//         </span>
+//       ) : (
+//         <User className="w-5 h-5 text-emerald-600" />
+//       )}
+//     </div>
+//   );
+
+//   const SidebarContent = ({ collapsed = false }) => (
+//     <div className="flex flex-col h-full bg-white overflow-hidden">
+//       <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6 justify-between lg:justify-start'} border-b border-gray-100 shrink-0 transition-all duration-300`}>
+//         <Link to="/dashboard" className="flex items-center gap-2">
+//           <Logo className="w-8 h-8 shrink-0" showText={!collapsed} />
+//         </Link>
+//         {!collapsed && (
+//           <button className="lg:hidden p-2" onClick={() => setIsMobileMenuOpen(false)}>
+//             <X className="w-6 h-6 text-gray-500" />
+//           </button>
+//         )}
+//       </div>
+
+//       <div className={`flex-1 overflow-y-auto py-6 ${collapsed ? 'px-3' : 'px-4'} space-y-6 hide-scrollbar transition-all duration-300`}>
+
+//         {isStoreCreated && (
+//           <>
+//             <Link
+//               to="/dashboard"
+//               title={collapsed ? "Dashboard" : ""}
+//               className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl font-bold transition-all ${
+//                 location.pathname === "/dashboard" ? "bg-sabi-primary text-white shadow-md shadow-emerald-600/20" : "text-gray-600 hover:bg-gray-50"
+//               }`}
+//               onClick={() => setIsMobileMenuOpen(false)}
+//             >
+//               <LayoutDashboard className="w-5 h-5 shrink-0" />
+//               {!collapsed && <span className="whitespace-nowrap">Dashboard</span>}
+//             </Link>
+
+//             {navigation.map((group, idx) => (
+//               <div key={idx} className={collapsed ? "mt-6" : ""}>
+//                 {!collapsed ? (
+//                   <p className="px-4 text-xs font-extrabold text-gray-400 tracking-wider mb-3 truncate transition-all duration-300">
+//                     {group.section}
+//                   </p>
+//                 ) : (
+//                   <div className="w-full h-px bg-gray-100 my-4"></div>
+//                 )}
+//                 <div className="space-y-1.5">
+//                   {group.items.map((item, itemIdx) => {
+//                     const isActive = !item.external && location.pathname.includes(item.path);
+//                     const linkClasses = `flex items-center ${collapsed ? 'justify-center' : 'justify-between px-4'} py-3 rounded-xl font-semibold transition-all ${
+//                       isActive ? "bg-emerald-50 text-sabi-primary" : "text-gray-700 hover:bg-gray-50"
+//                     }`;
+
+//                     const content = (
+//                       <>
+//                         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+//                           <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-sabi-primary" : "text-gray-400"}`} />
+//                           {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+//                         </div>
+//                         {!collapsed && item.badge && (
+//                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.badgeColor || 'bg-gray-100 text-gray-600'}`}>
+//                             {item.badge}
+//                           </span>
+//                         )}
+//                       </>
+//                     );
+
+//                     return item.external ? (
+//                       <a
+//                         key={itemIdx}
+//                         href={item.path}
+//                         target="_blank"
+//                         rel="noopener noreferrer"
+//                         title={collapsed ? item.name : ""}
+//                         className={linkClasses}
+//                         onClick={() => setIsMobileMenuOpen(false)}
+//                       >
+//                         {content}
+//                       </a>
+//                     ) : (
+//                       <Link
+//                         key={itemIdx}
+//                         to={item.path}
+//                         title={collapsed ? item.name : ""}
+//                         className={linkClasses}
+//                         onClick={() => setIsMobileMenuOpen(false)}
+//                       >
+//                         {content}
+//                       </Link>
+//                     );
+//                   })}
+//                 </div>
+//               </div>
+//             ))}
+//           </>
+//         )}
+
+//         <div className={collapsed ? "mt-auto pt-4" : "mt-8 pt-4 border-t border-gray-100"}>
+//           <button
+//             onClick={handleLogoutClick}
+//             className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl font-bold transition-all text-red-600 hover:bg-red-50`}
+//             title={collapsed ? "Log Out" : ""}
+//           >
+//             <LogOut className="w-5 h-5 shrink-0" />
+//             {!collapsed && <span>Log Out</span>}
+//           </button>
+//         </div>
+
+//       </div>
+
+//       {/* {isStoreCreated && !collapsed && (
+//         <div className="p-4 shrink-0 border-t border-gray-100 transition-all duration-300">
+//           <div className="bg-emerald-50 rounded-2xl p-4 relative overflow-hidden">
+//              <div className="flex items-start gap-3 relative z-10">
+//                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+//                    <Rocket className="w-4 h-4 text-sabi-primary" />
+//                 </div>
+//                 <div>
+//                    <h4 className="font-bold text-gray-900 text-sm">Grow Your Business</h4>
+//                    <p className="text-xs text-gray-600 mt-1 mb-3">Add more products and start sharing your store link.</p>
+//                    <button className="w-full bg-sabi-primary text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 hover:bg-sabi-primaryDark transition-colors">
+//                       View Tips <ChevronRight className="w-4 h-4" />
+//                    </button>
+//                 </div>
+//              </div>
+//           </div>
+//         </div>
+//       )} */}
+//     </div>
+//   );
+
+//   return (
+//     <div className="flex h-screen bg-gray-50/50 font-sans overflow-hidden">
+
+//       {/* DYNAMIC NOTIFICATION MODAL */}
+//       <NotificationModal
+//         isOpen={isNotifOpen}
+//         onClose={() => setIsNotifOpen(false)}
+//         notifications={notifications}
+//         markAsRead={markAsRead}
+//         markAllAsRead={markAllAsRead}
+//       />
+
+//       <ConfirmModal
+//         isOpen={isLogoutModalOpen}
+//         onClose={() => setIsLogoutModalOpen(false)}
+//         onConfirm={confirmLogout}
+//         title="Log Out?"
+//         message="Are you sure you want to log out of your dashboard? You will need to sign back in to manage your store."
+//         confirmText="Yes, Log Out"
+//         cancelText="Cancel"
+//       />
+
+//       <aside className={`hidden lg:block ${isDesktopCollapsed ? 'w-22' : 'w-70'} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}>
+//         <SidebarContent collapsed={isDesktopCollapsed} />
+//       </aside>
+
+//       {isMobileMenuOpen && (
+//         <div className="fixed inset-0 z-50 lg:hidden flex">
+//           <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+//           <div className="w-70 h-full bg-white shadow-2xl relative z-50 animate-in slide-in-from-left-4 duration-200">
+//              <SidebarContent collapsed={false} />
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+
+//         <header className="hidden lg:flex h-20 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0 z-10">
+//           <div className="flex items-center gap-4">
+//             <button
+//               onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+//               className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors shrink-0"
+//               title={isDesktopCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+//             >
+//               {isDesktopCollapsed ? <PanelLeftOpen className="w-6 h-6" /> : <PanelLeftClose className="w-6 h-6" />}
+//             </button>
+
+//             {isStoreCreated && (
+//               <div className="relative w-72 xl:w-96">
+//                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+//                 <input
+//                   type="text"
+//                   placeholder="Search orders, products..."
+//                   className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary text-sm font-medium transition-all"
+//                 />
+//               </div>
+//             )}
+//           </div>
+
+//           <div className="flex items-center gap-4 shrink-0">
+//             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
+//               <HelpCircle className="w-4 h-4 text-sabi-primary" /> Help & Support
+//             </button>
+
+//             {isStoreCreated && (
+//               <>
+//                 <a href={storeUrl} target={vendorData?.storeLink ? "_blank" : "_self"} rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
+//                   <ExternalLink className="w-4 h-4 text-sabi-primary" /> View Store
+//                 </a>
+//                 <div className="w-px h-8 bg-gray-200 mx-2"></div>
+
+//                 <button
+//                   onClick={() => setIsNotifOpen(true)}
+//                   className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+//                 >
+//                   <Bell className="w-6 h-6" />
+//                   {unreadNotifsCount > 0 && (
+//                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+//                   )}
+//                 </button>
+//               </>
+//             )}
+
+//             <button className="flex items-center gap-3 pl-2">
+//               <DynamicAvatar size="w-10 h-10" />
+//               <div className="text-left hidden xl:block">
+//                 <p className="text-sm font-bold text-gray-900 truncate max-w-[150px]">{displayName}</p>
+//                 <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${hasStore ? 'text-emerald-600' : 'text-orange-500'}`}>
+//                   {displayRole}
+//                 </p>
+//               </div>
+//             </button>
+//           </div>
+//         </header>
+
+//         <header className="lg:hidden flex h-16 bg-white border-b border-gray-200 items-center justify-between px-4 shrink-0 sticky top-0 z-30">
+//           <div className="flex items-center gap-3">
+//             <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 -ml-1.5 text-gray-600">
+//               <Menu className="w-6 h-6" />
+//             </button>
+//             <Logo className="w-7 h-7" showText={true} />
+//           </div>
+//           <div className="flex items-center gap-3">
+//             {isStoreCreated && (
+//               <>
+//                 <button className="p-1.5 text-gray-600">
+//                   <Search className="w-5 h-5" />
+//                 </button>
+
+//                 <button
+//                   onClick={() => setIsNotifOpen(true)}
+//                   className="relative p-1.5 text-gray-600 mr-1"
+//                 >
+//                   <Bell className="w-5 h-5" />
+//                   {unreadNotifsCount > 0 && (
+//                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+//                   )}
+//                 </button>
+//               </>
+//             )}
+//             <DynamicAvatar size="w-8 h-8" />
+//           </div>
+//         </header>
+
+//         <main className="flex-1 flex flex-col min-h-0 relative w-full">
+//            <Outlet />
+//         </main>
+
+//         {isStoreCreated && (
+//           <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-40 pb-safe">
+//             <div className="flex items-center justify-between px-2 h-16 relative">
+//               <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+//                  <Link to="/dashboard/products/new" className="flex items-center justify-center w-14 h-14 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-full shadow-lg border-4 border-white transition-transform active:scale-95">
+//                     <Plus className="w-6 h-6" />
+//                  </Link>
+//               </div>
+
+//               {bottomNav.map((item, idx) => {
+//                 const isActive = location.pathname === item.path;
+//                 if (idx === 2) return <div key="spacer" className="w-14"></div>
+
+//                 return item.action ? (
+//                    <button key={idx} onClick={item.action} className="flex flex-col items-center justify-center w-[20%] py-1">
+//                       <item.icon className="w-6 h-6 mb-1 text-gray-400" />
+//                       <span className="text-[10px] font-bold text-gray-400">{item.name}</span>
+//                    </button>
+//                 ) : (
+//                    <Link key={idx} to={item.path} className="flex flex-col items-center justify-center w-[20%] py-1">
+//                       <item.icon className={`w-6 h-6 mb-1 ${isActive ? 'text-sabi-primary fill-emerald-100' : 'text-gray-400'}`} />
+//                       <span className={`text-[10px] font-bold ${isActive ? 'text-sabi-primary' : 'text-gray-400'}`}>{item.name}</span>
+//                    </Link>
+//                 );
+//               })}
+//             </div>
+//           </div>
+//         )}
+
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default VendorLayout;
+
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, Store, Package, ClipboardList, Users, 
-  BarChart2, Tag, QrCode, CreditCard, Settings, HelpCircle,
-  Search, Bell, ExternalLink, Menu, X, Plus,
-  ChevronRight, Rocket, MessageCircle,
-  CreditCardIcon, User, PanelLeftClose, PanelLeftOpen, LogOut, PiggyBank, Brackets
+import {
+  LayoutDashboard,
+  Store,
+  Package,
+  ClipboardList,
+  Users,
+  BarChart2,
+  Tag,
+  QrCode,
+  CreditCard,
+  Settings,
+  HelpCircle,
+  Search,
+  Bell,
+  ExternalLink,
+  Menu,
+  X,
+  Plus,
+  ChevronRight,
+  Rocket,
+  MessageCircle,
+  CreditCardIcon,
+  User,
+  PanelLeftClose,
+  PanelLeftOpen,
+  LogOut,
+  PiggyBank,
+  Brackets,
 } from "lucide-react";
 import Logo from "../components/shared/Logo";
-import ConfirmModal from "../components/shared/ConfirmModal"; 
+import ConfirmModal from "../components/shared/ConfirmModal";
 import NotificationModal from "../pages/vendor/NotificationModal";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext"; // <-- Secure Auth Context
 
 const VendorLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
-  
+
   // MODAL & NOTIFICATION STATES
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  
+
   // REAL NOTIFICATION STATE
   const [notifications, setNotifications] = useState([]);
-  const unreadNotifsCount = notifications.filter(n => !n.isRead).length;
+  const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [vendorData, setVendorData] = useState({
-    name: "Vendor",
-    storeName: null,
-    storeType: null,
-    logoUrl: null,
-    isOnline: false,
-    storeLink: null
-  });
+  // SECURE AUTH STATE
+  const { vendor, logout, isLoading: isAuthLoading } = useAuth();
 
   const [stats, setStats] = useState({
     products: 0,
-    orders: 0
+    orders: 0,
   });
 
+  // PROTECTED ROUTE REDIRECTION LOGIC
   useEffect(() => {
-    const token = localStorage.getItem('sabisell_token');
-    const storedData = localStorage.getItem('sabisell_vendor');
-    
-    if (!token || !storedData) {
-      navigate('/login', { replace: true });
+    if (isAuthLoading) return;
+
+    if (!vendor) {
+      navigate("/login", { replace: true });
       return;
     }
 
-    const parsedVendor = JSON.parse(storedData);
-    if (!parsedVendor.storeLink || parsedVendor.storeLink === "") {
-      navigate('/dashboard/onboarding', { replace: true });
+    // Force onboarding if they haven't set up a store link yet
+    if (!vendor.storeLink && location.pathname !== "/dashboard/onboarding") {
+      navigate("/dashboard/onboarding", { replace: true });
     }
-  }, [navigate, location.pathname]);
-
-  useEffect(() => {
-    const fetchVendorData = () => {
-      const storedData = localStorage.getItem('sabisell_vendor');
-      if (storedData) {
-        setVendorData(JSON.parse(storedData));
-      }
-    };
-
-    fetchVendorData();
-    window.addEventListener('storage', fetchVendorData);
-    return () => window.removeEventListener('storage', fetchVendorData);
-  }, []);
+  }, [vendor, isAuthLoading, navigate, location.pathname]);
 
   // FETCH STATS & NOTIFICATIONS
   useEffect(() => {
     const fetchSidebarData = async () => {
       try {
         const [prodRes, ordRes, notifRes] = await Promise.all([
-          api.get('/products').catch(() => ({ data: { products: [] } })),
-          api.get('/orders').catch(() => ({ data: { orders: [] } })),
-          api.get('/notifications').catch(() => ({ data: { notifications: [] } }))
+          api.get("/products").catch(() => ({ data: { products: [] } })),
+          api.get("/orders").catch(() => ({ data: { orders: [] } })),
+          api
+            .get("/notifications")
+            .catch(() => ({ data: { notifications: [] } })),
         ]);
-        
-        const activeOrders = ordRes.data.orders?.filter(
-          order => order.status === 'Pending' || order.status === 'Processing'
-        ) || [];
+
+        const activeOrders =
+          ordRes.data.orders?.filter(
+            (order) =>
+              order.status === "Pending" || order.status === "Processing",
+          ) || [];
 
         setStats({
           products: prodRes.data.products?.length || 0,
-          orders: activeOrders.length 
+          orders: activeOrders.length,
         });
 
         // Set Notifications
         if (notifRes.data.notifications) {
           setNotifications(notifRes.data.notifications);
         }
-
       } catch (error) {
         console.error("Failed to load sidebar data:", error);
       }
     };
 
-    if (localStorage.getItem('sabisell_token') && vendorData.storeLink) {
+    if (vendor?.storeLink) {
       fetchSidebarData();
     }
-  }, [location.pathname, vendorData.storeLink]); 
+  }, [location.pathname, vendor?.storeLink]);
 
   // NOTIFICATION ACTIONS
   const markAsRead = async (id) => {
     try {
-      await api.put(`/notifications/${id}/read`); // Update DB
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      await api.put(`/notifications/${id}/read`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+      );
     } catch (err) {
       console.error("Failed to mark as read", err);
     }
@@ -115,68 +614,92 @@ const VendorLayout = () => {
 
   const markAllAsRead = async () => {
     try {
-      await api.put(`/notifications/read-all`); // Update DB
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      await api.put(`/notifications/read-all`);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (err) {
       console.error("Failed to mark all as read", err);
     }
   };
 
   // UI STATE FLAGS
-  const isStoreCreated = Boolean(vendorData?.storeLink); 
-  const hasStore = vendorData.isOnline && vendorData.storeName;
-  const displayName = hasStore ? vendorData.storeName : vendorData.name;
-  const displayRole = hasStore ? vendorData.storeType || "Verified Store" : "Setup Pending";
+  const isStoreCreated = Boolean(vendor?.storeLink);
+  const hasStore = vendor?.isOnline && vendor?.storeName;
+  const displayName = hasStore ? vendor.storeName : vendor?.name || "Vendor";
+  const displayRole = hasStore
+    ? vendor.storeType || "Verified Store"
+    : "Setup Pending";
 
-  const isFreeHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost');
-  
-  const storeUrl = vendorData?.storeLink 
-    ? (isFreeHost 
-        ? `/store/${vendorData.storeLink}` 
-        : `${window.location.protocol}//${vendorData.storeLink}.${window.location.host.replace('www.', '')}`)
+  const isFreeHost =
+    window.location.hostname.includes("vercel.app") ||
+    window.location.hostname.includes("localhost");
+
+  const storeUrl = vendor?.storeLink
+    ? isFreeHost
+      ? `/store/${vendor.storeLink}`
+      : `${window.location.protocol}//${vendor.storeLink}.${window.location.host.replace("www.", "")}`
     : "/dashboard/settings";
 
   const handleLogoutClick = () => {
-    setIsMobileMenuOpen(false); 
-    setIsLogoutModalOpen(true); 
+    setIsMobileMenuOpen(false);
+    setIsLogoutModalOpen(true);
   };
 
-  const confirmLogout = () => {
-    localStorage.removeItem('sabisell_token');
-    localStorage.removeItem('sabisell_vendor');
-    navigate('/login', { replace: true });
+  const confirmLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
-
-  useEffect(() => {
-    const syncTabs = (event) => {
-      if (event.key === 'sabisell_token') {
-        if (!event.newValue || event.newValue !== event.oldValue) {
-          navigate('/login', { replace: true });
-        }
-      }
-    };
-    window.addEventListener('storage', syncTabs);
-    return () => window.removeEventListener('storage', syncTabs);
-  }, [navigate]);
 
   const navigation = [
-    { section: "STORE", items: [
-      { name: "My Store", icon: Store, path: storeUrl, external: !!vendorData?.storeLink },
-      { name: "Products", icon: Package, path: "/dashboard/products", badge: stats.products > 0 ? stats.products.toString() : null },
-      { name: "Orders", icon: ClipboardList, path: "/dashboard/orders", badge: stats.orders > 0 ? stats.orders.toString() : null, badgeColor: "bg-emerald-100 text-emerald-800" },
-      { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
-      { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
-    ]},
-    { section: "SALES & MARKETING", items: [
-      { name: "Sales", icon: Brackets, path: "/dashboard/sales" },
-      { name: "Discounts & Coupons", icon: Tag, path: "/dashboard/discounts" },
-      { name: "Store Link & QR Code", icon: QrCode, path: "/dashboard/store-link" },
-    ]},
-    { section: "SETTINGS", items: [
-      { name: "Billing", icon: CreditCardIcon, path: "/dashboard/billing" },
-      { name: "Payments", icon: PiggyBank, path: "/dashboard/payments" },
-      { name: "Store Settings", icon: Settings, path: "/dashboard/settings" },
-    ]}
+    {
+      section: "STORE",
+      items: [
+        {
+          name: "My Store",
+          icon: Store,
+          path: storeUrl,
+          external: !!vendor?.storeLink,
+        },
+        {
+          name: "Products",
+          icon: Package,
+          path: "/dashboard/products",
+          badge: stats.products > 0 ? stats.products.toString() : null,
+        },
+        {
+          name: "Orders",
+          icon: ClipboardList,
+          path: "/dashboard/orders",
+          badge: stats.orders > 0 ? stats.orders.toString() : null,
+          badgeColor: "bg-emerald-100 text-emerald-800",
+        },
+        { name: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
+        { name: "Analytics", icon: BarChart2, path: "/dashboard/analytics" },
+      ],
+    },
+    {
+      section: "SALES & MARKETING",
+      items: [
+        { name: "Sales", icon: Brackets, path: "/dashboard/sales" },
+        {
+          name: "Discounts & Coupons",
+          icon: Tag,
+          path: "/dashboard/discounts",
+        },
+        {
+          name: "Store Link & QR Code",
+          icon: QrCode,
+          path: "/dashboard/store-link",
+        },
+      ],
+    },
+    {
+      section: "SETTINGS",
+      items: [
+        { name: "Billing", icon: CreditCardIcon, path: "/dashboard/billing" },
+        { name: "Payments", icon: PiggyBank, path: "/dashboard/payments" },
+        { name: "Store Settings", icon: Settings, path: "/dashboard/settings" },
+      ],
+    },
   ];
 
   const bottomNav = [
@@ -188,12 +711,18 @@ const VendorLayout = () => {
   ];
 
   const DynamicAvatar = ({ size = "w-10 h-10" }) => (
-    <div className={`${size} rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}>
-      {hasStore && vendorData.logoUrl && vendorData.logoUrl !== "null" ? (
-        <img src={vendorData.logoUrl} alt={displayName} className="w-full h-full object-cover" />
+    <div
+      className={`${size} rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}
+    >
+      {hasStore && vendor?.logoUrl && vendor.logoUrl !== "null" ? (
+        <img
+          src={vendor.logoUrl}
+          alt={displayName}
+          className="w-full h-full object-cover"
+        />
       ) : hasStore ? (
         <span className="font-extrabold text-sabi-primary text-sm">
-          {vendorData.storeName.substring(0, 2).toUpperCase()}
+          {vendor.storeName.substring(0, 2).toUpperCase()}
         </span>
       ) : (
         <User className="w-5 h-5 text-emerald-600" />
@@ -203,31 +732,41 @@ const VendorLayout = () => {
 
   const SidebarContent = ({ collapsed = false }) => (
     <div className="flex flex-col h-full bg-white overflow-hidden">
-      <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6 justify-between lg:justify-start'} border-b border-gray-100 shrink-0 transition-all duration-300`}>
+      <div
+        className={`h-20 flex items-center ${collapsed ? "justify-center" : "px-6 justify-between lg:justify-start"} border-b border-gray-100 shrink-0 transition-all duration-300`}
+      >
         <Link to="/dashboard" className="flex items-center gap-2">
           <Logo className="w-8 h-8 shrink-0" showText={!collapsed} />
         </Link>
         {!collapsed && (
-          <button className="lg:hidden p-2" onClick={() => setIsMobileMenuOpen(false)}>
+          <button
+            className="lg:hidden p-2 cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
             <X className="w-6 h-6 text-gray-500" />
           </button>
         )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto py-6 ${collapsed ? 'px-3' : 'px-4'} space-y-6 hide-scrollbar transition-all duration-300`}>
-        
+      <div
+        className={`flex-1 overflow-y-auto py-6 ${collapsed ? "px-3" : "px-4"} space-y-6 hide-scrollbar transition-all duration-300`}
+      >
         {isStoreCreated && (
           <>
-            <Link 
-              to="/dashboard" 
+            <Link
+              to="/dashboard"
               title={collapsed ? "Dashboard" : ""}
-              className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl font-bold transition-all ${
-                location.pathname === "/dashboard" ? "bg-sabi-primary text-white shadow-md shadow-emerald-600/20" : "text-gray-600 hover:bg-gray-50"
+              className={`flex items-center ${collapsed ? "justify-center" : "gap-3 px-4"} py-3 rounded-xl font-bold transition-all ${
+                location.pathname === "/dashboard"
+                  ? "bg-sabi-primary text-white shadow-md shadow-emerald-600/20"
+                  : "text-gray-600 hover:bg-gray-50"
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <LayoutDashboard className="w-5 h-5 shrink-0" /> 
-              {!collapsed && <span className="whitespace-nowrap">Dashboard</span>}
+              <LayoutDashboard className="w-5 h-5 shrink-0" />
+              {!collapsed && (
+                <span className="whitespace-nowrap">Dashboard</span>
+              )}
             </Link>
 
             {navigation.map((group, idx) => (
@@ -241,19 +780,32 @@ const VendorLayout = () => {
                 )}
                 <div className="space-y-1.5">
                   {group.items.map((item, itemIdx) => {
-                    const isActive = !item.external && location.pathname.includes(item.path);
-                    const linkClasses = `flex items-center ${collapsed ? 'justify-center' : 'justify-between px-4'} py-3 rounded-xl font-semibold transition-all ${
-                      isActive ? "bg-emerald-50 text-sabi-primary" : "text-gray-700 hover:bg-gray-50"
+                    const isActive =
+                      !item.external && location.pathname.includes(item.path);
+                    const linkClasses = `cursor-pointer flex items-center ${collapsed ? "justify-center" : "justify-between px-4"} py-3 rounded-xl font-semibold transition-all ${
+                      isActive
+                        ? "bg-emerald-50 text-sabi-primary"
+                        : "text-gray-700 hover:bg-gray-50"
                     }`;
 
                     const content = (
                       <>
-                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-                          <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-sabi-primary" : "text-gray-400"}`} />
-                          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                        <div
+                          className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
+                        >
+                          <item.icon
+                            className={`w-5 h-5 shrink-0 ${isActive ? "text-sabi-primary" : "text-gray-400"}`}
+                          />
+                          {!collapsed && (
+                            <span className="whitespace-nowrap">
+                              {item.name}
+                            </span>
+                          )}
                         </div>
                         {!collapsed && item.badge && (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.badgeColor || 'bg-gray-100 text-gray-600'}`}>
+                          <span
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.badgeColor || "bg-gray-100 text-gray-600"}`}
+                          >
                             {item.badge}
                           </span>
                         )}
@@ -273,9 +825,9 @@ const VendorLayout = () => {
                         {content}
                       </a>
                     ) : (
-                      <Link 
-                        key={itemIdx} 
-                        to={item.path} 
+                      <Link
+                        key={itemIdx}
+                        to={item.path}
                         title={collapsed ? item.name : ""}
                         className={linkClasses}
                         onClick={() => setIsMobileMenuOpen(false)}
@@ -290,53 +842,38 @@ const VendorLayout = () => {
           </>
         )}
 
-        <div className={collapsed ? "mt-auto pt-4" : "mt-8 pt-4 border-t border-gray-100"}>
-          <button 
+        <div
+          className={
+            collapsed ? "mt-auto pt-4" : "mt-8 pt-4 border-t border-gray-100"
+          }
+        >
+          <button
             onClick={handleLogoutClick}
-            className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl font-bold transition-all text-red-600 hover:bg-red-50`}
+            className={`flex items-center w-full cursor-pointer ${collapsed ? "justify-center" : "gap-3 px-4"} py-3 rounded-xl font-bold transition-all text-red-600 hover:bg-red-50`}
             title={collapsed ? "Log Out" : ""}
           >
             <LogOut className="w-5 h-5 shrink-0" />
             {!collapsed && <span>Log Out</span>}
           </button>
         </div>
-
       </div>
-
-      {/* {isStoreCreated && !collapsed && (
-        <div className="p-4 shrink-0 border-t border-gray-100 transition-all duration-300">
-          <div className="bg-emerald-50 rounded-2xl p-4 relative overflow-hidden">
-             <div className="flex items-start gap-3 relative z-10">
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
-                   <Rocket className="w-4 h-4 text-sabi-primary" />
-                </div>
-                <div>
-                   <h4 className="font-bold text-gray-900 text-sm">Grow Your Business</h4>
-                   <p className="text-xs text-gray-600 mt-1 mb-3">Add more products and start sharing your store link.</p>
-                   <button className="w-full bg-sabi-primary text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 hover:bg-sabi-primaryDark transition-colors">
-                      View Tips <ChevronRight className="w-4 h-4" />
-                   </button>
-                </div>
-             </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 
+  if (isAuthLoading || !vendor) return null; // Prevent UI flicker
+
   return (
     <div className="flex h-screen bg-gray-50/50 font-sans overflow-hidden">
-      
       {/* DYNAMIC NOTIFICATION MODAL */}
-      <NotificationModal 
-        isOpen={isNotifOpen} 
-        onClose={() => setIsNotifOpen(false)} 
+      <NotificationModal
+        isOpen={isNotifOpen}
+        onClose={() => setIsNotifOpen(false)}
         notifications={notifications}
         markAsRead={markAsRead}
         markAllAsRead={markAllAsRead}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={confirmLogout}
@@ -346,56 +883,71 @@ const VendorLayout = () => {
         cancelText="Cancel"
       />
 
-      <aside className={`hidden lg:block ${isDesktopCollapsed ? 'w-22' : 'w-70'} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}>
+      <aside
+        className={`hidden lg:block ${isDesktopCollapsed ? "w-22" : "w-70"} h-full border-r border-gray-200 shrink-0 z-20 transition-all duration-300 ease-in-out`}
+      >
         <SidebarContent collapsed={isDesktopCollapsed} />
       </aside>
 
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div
+            className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
           <div className="w-70 h-full bg-white shadow-2xl relative z-50 animate-in slide-in-from-left-4 duration-200">
-             <SidebarContent collapsed={false} />
+            <SidebarContent collapsed={false} />
           </div>
         </div>
       )}
 
       <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
-        
         <header className="hidden lg:flex h-20 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0 z-10">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
               className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors shrink-0"
               title={isDesktopCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
-              {isDesktopCollapsed ? <PanelLeftOpen className="w-6 h-6" /> : <PanelLeftClose className="w-6 h-6" />}
+              {isDesktopCollapsed ? (
+                <PanelLeftOpen className="w-6 h-6" />
+              ) : (
+                <PanelLeftClose className="w-6 h-6" />
+              )}
             </button>
-            
+
             {isStoreCreated && (
               <div className="relative w-72 xl:w-96">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search orders, products..." 
+                <input
+                  type="text"
+                  placeholder="Search orders, products..."
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sabi-primary/20 focus:border-sabi-primary text-sm font-medium transition-all"
                 />
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-4 shrink-0">
             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
-              <HelpCircle className="w-4 h-4 text-sabi-primary" /> Help & Support
+              <HelpCircle className="w-4 h-4 text-sabi-primary" /> Help &
+              Support
             </button>
-            
+
             {isStoreCreated && (
               <>
-                <a href={storeUrl} target={vendorData?.storeLink ? "_blank" : "_self"} rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm">
-                  <ExternalLink className="w-4 h-4 text-sabi-primary" /> View Store
+                <a
+                  href={storeUrl}
+                  target={vendor?.storeLink ? "_blank" : "_self"}
+                  rel="noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors shadow-sm"
+                >
+                  <ExternalLink className="w-4 h-4 text-sabi-primary" /> View
+                  Store
                 </a>
                 <div className="w-px h-8 bg-gray-200 mx-2"></div>
-                
-                <button 
+
+                <button
                   onClick={() => setIsNotifOpen(true)}
                   className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                 >
@@ -406,12 +958,16 @@ const VendorLayout = () => {
                 </button>
               </>
             )}
-            
+
             <button className="flex items-center gap-3 pl-2">
               <DynamicAvatar size="w-10 h-10" />
               <div className="text-left hidden xl:block">
-                <p className="text-sm font-bold text-gray-900 truncate max-w-[150px]">{displayName}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${hasStore ? 'text-emerald-600' : 'text-orange-500'}`}>
+                <p className="text-sm font-bold text-gray-900 truncate max-w-[150px]">
+                  {displayName}
+                </p>
+                <p
+                  className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${hasStore ? "text-emerald-600" : "text-orange-500"}`}
+                >
                   {displayRole}
                 </p>
               </div>
@@ -421,7 +977,10 @@ const VendorLayout = () => {
 
         <header className="lg:hidden flex h-16 bg-white border-b border-gray-200 items-center justify-between px-4 shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 -ml-1.5 text-gray-600">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-1.5 -ml-1.5 text-gray-600"
+            >
               <Menu className="w-6 h-6" />
             </button>
             <Logo className="w-7 h-7" showText={true} />
@@ -433,7 +992,7 @@ const VendorLayout = () => {
                   <Search className="w-5 h-5" />
                 </button>
 
-                <button 
+                <button
                   onClick={() => setIsNotifOpen(true)}
                   className="relative p-1.5 text-gray-600 mr-1"
                 >
@@ -449,38 +1008,56 @@ const VendorLayout = () => {
         </header>
 
         <main className="flex-1 flex flex-col min-h-0 relative w-full">
-           <Outlet />
+          <Outlet />
         </main>
 
         {isStoreCreated && (
           <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-40 pb-safe">
             <div className="flex items-center justify-between px-2 h-16 relative">
               <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                 <Link to="/dashboard/products/new" className="flex items-center justify-center w-14 h-14 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-full shadow-lg border-4 border-white transition-transform active:scale-95">
-                    <Plus className="w-6 h-6" />
-                 </Link>
+                <Link
+                  to="/dashboard/products/new"
+                  className="flex items-center justify-center w-14 h-14 bg-sabi-primary hover:bg-sabi-primaryDark text-white rounded-full shadow-lg border-4 border-white transition-transform active:scale-95"
+                >
+                  <Plus className="w-6 h-6" />
+                </Link>
               </div>
 
               {bottomNav.map((item, idx) => {
                 const isActive = location.pathname === item.path;
-                if (idx === 2) return <div key="spacer" className="w-14"></div>
+                if (idx === 2) return <div key="spacer" className="w-14"></div>;
 
                 return item.action ? (
-                   <button key={idx} onClick={item.action} className="flex flex-col items-center justify-center w-[20%] py-1">
-                      <item.icon className="w-6 h-6 mb-1 text-gray-400" />
-                      <span className="text-[10px] font-bold text-gray-400">{item.name}</span>
-                   </button>
+                  <button
+                    key={idx}
+                    onClick={item.action}
+                    className="flex flex-col items-center justify-center w-[20%] py-1"
+                  >
+                    <item.icon className="w-6 h-6 mb-1 text-gray-400" />
+                    <span className="text-[10px] font-bold text-gray-400">
+                      {item.name}
+                    </span>
+                  </button>
                 ) : (
-                   <Link key={idx} to={item.path} className="flex flex-col items-center justify-center w-[20%] py-1">
-                      <item.icon className={`w-6 h-6 mb-1 ${isActive ? 'text-sabi-primary fill-emerald-100' : 'text-gray-400'}`} />
-                      <span className={`text-[10px] font-bold ${isActive ? 'text-sabi-primary' : 'text-gray-400'}`}>{item.name}</span>
-                   </Link>
+                  <Link
+                    key={idx}
+                    to={item.path}
+                    className="flex flex-col items-center justify-center w-[20%] py-1"
+                  >
+                    <item.icon
+                      className={`w-6 h-6 mb-1 ${isActive ? "text-sabi-primary fill-emerald-100" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`text-[10px] font-bold ${isActive ? "text-sabi-primary" : "text-gray-400"}`}
+                    >
+                      {item.name}
+                    </span>
+                  </Link>
                 );
               })}
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

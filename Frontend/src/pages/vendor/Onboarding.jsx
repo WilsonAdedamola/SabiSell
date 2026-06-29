@@ -9,21 +9,28 @@ import {
   PartyPopper, Settings 
 } from "lucide-react";
 import api from '../../utils/api';
+import { useAuth } from "../../context/AuthContext";
 
 const VendorOnboarding = () => {
   const navigate = useNavigate();
   
-  // --- NEW: GUARD AGAINST ALREADY ONBOARDED USERS ---
+  // 1. Secure Global State
+  const { vendor, isLoading: isAuthLoading } = useAuth();
+  
+  // GUARD AGAINST ALREADY ONBOARDED USERS
   useEffect(() => {
-    const checkOnboardingStatus = () => {
-      const vendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-      // If they already have a storeLink, kick them directly to the dashboard
-      if (vendorData.storeLink && vendorData.isOnline) {
-        navigate('/dashboard', { replace: true });
-      }
-    };
-    checkOnboardingStatus();
-  }, [navigate]);
+    if (isAuthLoading) return;
+
+    if (!vendor) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // If they already have a storeLink, redirect to the dashboard
+    if (vendor.storeLink) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [vendor, isAuthLoading, navigate]);
 
   const [step, setStep] = useState(1);
   
@@ -32,7 +39,7 @@ const VendorOnboarding = () => {
   const [selectedStoreType, setSelectedStoreType] = useState(null);
   const dropdownRef = useRef(null);
 
-  // --- FORM DATA STATE ---
+  // FORM DATA STATE
   // Step 1: Store Details
   const [storeData, setStoreData] = useState({ storeName: "", storeLink: "", storeDescription: "" });
   
@@ -78,7 +85,7 @@ const VendorOnboarding = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- STORE LINK LIVE VALIDATION (DEBOUNCED) ---
+  // STORE LINK LIVE VALIDATION (DEBOUNCED)
   useEffect(() => {
     if (!storeData.storeLink) {
       setLinkStatus("idle");
@@ -107,7 +114,7 @@ const VendorOnboarding = () => {
     return () => clearTimeout(debounceTimer);
   }, [storeData.storeLink]);
 
-  // --- INPUT HANDLERS ---
+  // INPUT HANDLERS
   const handleNameChange = (e) => {
     const newName = e.target.value;
     const currentAutoSlug = storeData.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -130,7 +137,7 @@ const VendorOnboarding = () => {
   const handleStoreChange = (e) => setStoreData({ ...storeData, [e.target.name]: e.target.value });
   const handleProductChange = (e) => setProductData({ ...productData, [e.target.name]: e.target.value });
 
-  // --- 2MB FILE RESTRICTION ---
+  // 2MB FILE RESTRICTION
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -155,7 +162,7 @@ const VendorOnboarding = () => {
     }
   };
 
-  // --- NAVIGATION VALIDATION ---
+  // NAVIGATION VALIDATION
   const nextStep = () => {
     setError('');
     
@@ -173,7 +180,7 @@ const VendorOnboarding = () => {
   
   const prevStep = () => { if (step > 1) setStep(step - 1); };
 
-  // --- FINAL SUBMISSION ---
+  // FINAL SUBMISSION
   const handleLaunch = async () => {
     setError('');
 
@@ -193,7 +200,7 @@ const VendorOnboarding = () => {
       storeFormData.append('storeDescription', storeData.storeDescription);
       if (logoFile) storeFormData.append('logo', logoFile);
 
-      const storeRes = await api.put('/vendors/onboarding', storeFormData);
+      await api.put('/vendors/onboarding', storeFormData);
 
       // 2. Submit Product Data
       const prodFormData = new FormData();
@@ -207,24 +214,9 @@ const VendorOnboarding = () => {
 
       await api.post('/products', prodFormData);
 
-      // 3. Update localStorage
-      const currentVendorData = JSON.parse(localStorage.getItem('sabisell_vendor') || '{}');
-      const updatedVendor = {
-        ...currentVendorData,
-        storeName: storeRes.data.store.storeName,
-        storeLink: storeRes.data.store.storeLink,
-        logoUrl: storeRes.data.store.logoUrl,
-        isOnline: true 
-      };
-      localStorage.setItem('sabisell_vendor', JSON.stringify(updatedVendor));
-      window.dispatchEvent(new Event("storage")); 
-
-      // 4. Trigger Success Screen!
+      // 3. Trigger Success Screen
       setIsLoading(false);
       setIsSuccess(true);
-
-      // We no longer automatically navigate here! 
-      // The user must click the buttons on the Success Screen.
 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to complete setup. Please try again.');
@@ -232,13 +224,14 @@ const VendorOnboarding = () => {
     }
   };
 
-  // ============================================================================
+  // Prevent UI flashing before auth is verified
+  if (isAuthLoading || !vendor || vendor?.storeLink) return null;
+
   // SUCCESS SCREEN RENDER
-  // ============================================================================
   if (isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white p-4 text-center overflow-hidden">
-        {/* Confetti Explosion! */}
+        {/* Confetti Explosion */}
         <Confetti 
           width={window.innerWidth} 
           height={window.innerHeight} 
@@ -261,17 +254,17 @@ const VendorOnboarding = () => {
         
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in slide-in-from-bottom-8 duration-1000 delay-300">
           
-          {/* --- FIXED: Added replace: true to obliterate the back history --- */}
+          {/* FIXED: Using window.location.href to force a hard reload so AuthContext pulls the updated vendor status */}
           <button 
-            onClick={() => navigate('/dashboard/settings', { replace: true })}
+            onClick={() => window.location.href = '/dashboard/settings'}
             className="w-full sm:w-auto px-8 py-4 bg-[#044e3b] hover:bg-[#033c2d] text-white rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Settings className="w-5 h-5" /> Go to Store Settings
           </button>
           
-          {/* --- FIXED: Added replace: true to obliterate the back history --- */}
+          {/* FIXED: Using window.location.href to force a hard reload so AuthContext pulls the updated vendor status */}
           <button 
-            onClick={() => navigate('/dashboard', { replace: true })}
+            onClick={() => window.location.href = '/dashboard'}
             className="w-full sm:w-auto px-8 py-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <LayoutDashboard className="w-5 h-5" /> Go to Dashboard
@@ -281,9 +274,7 @@ const VendorOnboarding = () => {
     );
   }
 
-  // ============================================================================
   // NORMAL ONBOARDING RENDER
-  // ============================================================================
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-12 w-full">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
